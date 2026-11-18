@@ -23,6 +23,18 @@ public class FrameMetrics
     public double P95_G { get; set; }
     public double P95_B { get; set; }
 
+    public double P02_R { get; set; }
+    public double P02_G { get; set; }
+    public double P02_B { get; set; }
+
+    public double P05_R { get; set; }
+    public double P05_G { get; set; }
+    public double P05_B { get; set; }
+
+    public double P98_R { get; set; }
+    public double P98_G { get; set; }
+    public double P98_B { get; set; }
+
     public bool IsNegative { get; set; }
 }
 

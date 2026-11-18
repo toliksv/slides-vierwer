@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Serilog;
+using Serilog.Events;
 using SlidesViewer.CorrectionWorker.Host;
 using SlidesViewer.CorrectionWorker.Host.Services;
 using SlidesViewer.FilmAnalyzer;
@@ -7,32 +9,74 @@ using SlidesViewer.FilmAnalyzer.Analyzers;
 using SlidesViewer.FilmAnalyzer.Generators;
 using SlidesViewer.FilmAnalyzer.Services;
 
-var builder = Host.CreateApplicationBuilder(args);
+var logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.Extensions", LogEventLevel.Warning)
+    .MinimumLevel.Override("Confluent", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
+    .WriteTo.File(
+        "Logs/slides-correction-worker-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
 
-// Register settings
-builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection(KafkaSettings.SectionName));
-builder.Services.Configure<CaptureOneSettings>(builder.Configuration.GetSection(CaptureOneSettings.SectionName));
+Log.Logger = logger;
 
-// Bind settings to concrete instances for direct injection
-var captureOneSection = builder.Configuration.GetSection(CaptureOneSettings.SectionName);
-var captureOneSettings = new CaptureOneSettings
+try
 {
-    ScriptsFolder = captureOneSection["ScriptsFolder"] ?? "E:\\CaptureOneScripts"
-};
-builder.Services.AddSingleton(captureOneSettings);
+    Log.Information("Starting slides correction worker host");
 
-// Film Analyzer services
-builder.Services.AddSingleton<IColorDegradationAnalyzer, ColorDegradationAnalyzer>();
-builder.Services.AddSingleton<IPhysicalDefectAnalyzer, PhysicalDefectAnalyzer>();
-builder.Services.AddSingleton<IQualityAssessmentService, QualityAssessmentService>();
-builder.Services.AddSingleton<ICaptureOneStyleGenerator, CaptureOneStyleGenerator>();
-builder.Services.AddSingleton<IFilmScannerAnalyzer, FilmScannerAnalyzer>();
+    var builder = Host.CreateApplicationBuilder(args);
+    builder.Services.AddSerilog((sp, cfg) => cfg
+        .MinimumLevel.Information()
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.Extensions", LogEventLevel.Warning)
+        .MinimumLevel.Override("Confluent", LogEventLevel.Warning)
+        .Enrich.FromLogContext()
+        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
+        .WriteTo.File(
+            "Logs/slides-correction-worker-.log",
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 30,
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}"));
 
-// Correction Worker services
-builder.Services.AddSingleton<IFilmAnalysisService, FilmAnalysisService>();
+    // Register settings
+    builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection(KafkaSettings.SectionName));
+    builder.Services.Configure<CaptureOneSettings>(builder.Configuration.GetSection(CaptureOneSettings.SectionName));
 
-// Background service
-builder.Services.AddHostedService<KafkaConsumerService>();
+    // Bind settings to concrete instances for direct injection
+    var captureOneSection = builder.Configuration.GetSection(CaptureOneSettings.SectionName);
+    var captureOneSettings = new CaptureOneSettings
+    {
+        ScriptsFolder = captureOneSection["ScriptsFolder"] ?? "E:\\CaptureOneScripts"
+    };
+    builder.Services.AddSingleton(captureOneSettings);
 
-var host = builder.Build();
-host.Run();
+    // Film Analyzer services
+    builder.Services.AddSingleton<IColorDegradationAnalyzer, ColorDegradationAnalyzer>();
+    builder.Services.AddSingleton<IPhysicalDefectAnalyzer, PhysicalDefectAnalyzer>();
+    builder.Services.AddSingleton<IQualityAssessmentService, QualityAssessmentService>();
+    builder.Services.AddSingleton<ICaptureOneStyleGenerator, CaptureOneStyleGenerator>();
+    builder.Services.AddSingleton<IFilmScannerAnalyzer, FilmScannerAnalyzer>();
+
+    // Correction Worker services
+    builder.Services.AddSingleton<IFilmAnalysisService, FilmAnalysisService>();
+
+    // Background service
+    builder.Services.AddHostedService<KafkaConsumerService>();
+
+    var host = builder.Build();
+    await host.RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Host terminated unexpectedly");
+}
+finally
+{
+    Log.Information("Shutting down");
+    Log.CloseAndFlush();
+}

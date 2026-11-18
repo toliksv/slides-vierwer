@@ -26,6 +26,19 @@ public class ExposureAdjustment
     [JsonPropertyOrder(5)]
     public double Shadow { get; set; }
 
+    [JsonPropertyOrder(6)]
+    public double Contrast { get; set; }
+
+    // Per-channel shadow targets (used by CaptureOneStyleGenerator for shadow tint removal)
+    [JsonPropertyOrder(7)]
+    public double ShadowR { get; set; }
+
+    [JsonPropertyOrder(8)]
+    public double ShadowG { get; set; }
+
+    [JsonPropertyOrder(9)]
+    public double ShadowB { get; set; }
+
     public ExposureAdjustment()
     {
     }

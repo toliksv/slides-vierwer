@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SlidesViewer.FilmAnalyzer.Analyzers;
 using SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 
@@ -10,8 +11,17 @@ public interface IQualityAssessmentService
 
 public class QualityAssessmentService : IQualityAssessmentService
 {
+    private readonly ILogger<QualityAssessmentService> _logger;
+
+    public QualityAssessmentService(ILogger<QualityAssessmentService> logger)
+    {
+        _logger = logger;
+    }
+
     public QualityAssessment Assess(ColorDegradationAnalysis color, PhysicalDefectAnalysis physical)
     {
+        _logger.LogDebug("Starting quality assessment for {SourceType}", color.MediumType);
+
         var assessment = new QualityAssessment();
 
         // Color score (0-100)
@@ -39,6 +49,11 @@ public class QualityAssessmentService : IQualityAssessmentService
         assessment.SharpnessScore = Math.Round(assessment.SharpnessScore, 2);
         assessment.DefectScore = Math.Round(assessment.DefectScore, 2);
         assessment.DynamicRangeScore = Math.Round(assessment.DynamicRangeScore, 2);
+
+        _logger.LogInformation(
+            "Quality assessment complete: Overall={Overall:F1} Color={Color:F1} Sharpness={Sharpness:F1} Defects={Defects:F1} DynRange={DynRange:F1}",
+            assessment.OverallScore, assessment.ColorScore, assessment.SharpnessScore,
+            assessment.DefectScore, assessment.DynamicRangeScore);
 
         return assessment;
     }

@@ -143,18 +143,13 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
 
         var parts = new List<string>();
 
-        // Check if the first point is already (0,0) to avoid duplication
-        if (points.Length >= 2 && points[0] == 0 && points[1] == 0)
+        // Only add (0,0) manually if the first point is NOT already (0,0)
+        if (!(points.Length >= 2 && points[0] == 0 && points[1] == 0))
         {
-            parts.Add("0,0");
-        }
-        else
-        {
-            // Always ensure start at (0,0)
             parts.Add("0,0");
         }
 
-        // Convert 16-bit points (0-65535) to 0-1 range, skip the first if already added
+        // Skip the first pair if it was already (0,0)
         int startIndex = (points.Length >= 2 && points[0] == 0 && points[1] == 0) ? 2 : 0;
 
         for (int i = startIndex; i < points.Length; i += 2)
@@ -224,14 +219,23 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
 
     /// <summary>
     /// Generates Shadow values (R,G,B,Alpha) for the Shadow element.
-    /// Uses ExposureAdjustment.Shadow when available.
+    /// Uses per-channel ShadowR/ShadowG/ShadowB when available to remove color veil in shadows.
     /// </summary>
     private string GenerateShadowValues(FilmAnalysisResult analysis)
     {
-        double s = analysis.Corrections.Exposure.Shadow;
-        // Default to 0.05 if not set
-        if (s <= 0) s = 0.05;
-        
-        return $"{s.ToString("R", CultureInfo.InvariantCulture)};{s.ToString("R", CultureInfo.InvariantCulture)};{s.ToString("R", CultureInfo.InvariantCulture)};0";
+        double sr = analysis.Corrections.Exposure.ShadowR;
+        double sg = analysis.Corrections.Exposure.ShadowG;
+        double sb = analysis.Corrections.Exposure.ShadowB;
+
+        // Fallback to uniform Shadow if per-channel values not set
+        if (sr <= 0 && sg <= 0 && sb <= 0)
+        {
+            double s = analysis.Corrections.Exposure.Shadow;
+            if (s <= 0) s = 0.05;
+            return $"{s.ToString("R", CultureInfo.InvariantCulture)};{s.ToString("R", CultureInfo.InvariantCulture)};{s.ToString("R", CultureInfo.InvariantCulture)};0";
+        }
+
+        // Per-channel shadow: individual black point per R/G/B removes color veil
+        return $"{sr.ToString("R", CultureInfo.InvariantCulture)};{sg.ToString("R", CultureInfo.InvariantCulture)};{sb.ToString("R", CultureInfo.InvariantCulture)};0";
     }
 }

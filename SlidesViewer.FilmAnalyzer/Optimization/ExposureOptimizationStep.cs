@@ -17,7 +17,7 @@ public class ExposureOptimizationStep : IOptimizationStep
 
         double maxClipLo = Math.Max(metrics.ClipLoR, Math.Max(metrics.ClipLoG, metrics.ClipLoB));
 
-        if (maxClipLo > 0.015 && maxClipHi < 0.002 && adjustments.Exposure.Exposure < 1.5)
+        if (maxClipLo > 0.05 && maxClipHi < 0.002 && adjustments.Exposure.Exposure < 1.5)
         {
             adjustments.Exposure.Exposure = Math.Min(1.5, adjustments.Exposure.Exposure + 0.15);
             logMessage = $"Exposure increased to {adjustments.Exposure.Exposure:F2} EV due to shadow clipping ({maxClipLo:P1})";

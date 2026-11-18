@@ -411,24 +411,22 @@ public class FilmScannerAnalyzer : IFilmScannerAnalyzer
         adjustments.HdrToneMapping.HighlightRecovery = highlightLevel * 50;
 
         // Saturation preservation
-        adjustments.HdrToneMapping.Saturation = 10.0 * (1.0 - result.Color.OverallSaturation);
+        adjustments.HdrToneMapping.Saturation = 12.0;
     }
 
     private void AdjustDetail(CaptureOneAdjustments adjustments, FilmAnalysisResult result)
     {
-        // Sharpness (USM Amount) - scaled to Capture One range (0-200)
+        // Sharpness (USM Amount) - Capture One range 40..90
         // LocalContrast for film typically ranges 0.02-0.3
-        // Scale to produce reasonable USM values (50-200)
-        double sharpness = Math.Max(0, Math.Min(200, result.Physical.LocalContrast * 6000));
+        double sharpness = Math.Max(40, Math.Min(90, result.Physical.LocalContrast * 6000));
         adjustments.Detail.Sharpness = sharpness;
         
         // Edge enhancement (USM Radius) - typically 0.5-2.0 pixels
         double radius = Math.Max(0.3, Math.Min(3.0, 0.5 + result.Physical.LocalContrast * 5));
         adjustments.Detail.EdgeEnhancement = radius;
         
-        // Micro-contrast (USM Threshold) - based on haze level
-        // Lower haze = lower threshold (more detail preserved)
-        double threshold = Math.Max(0, Math.Min(255, result.Physical.HazeLevel * 255));
+        // Micro-contrast (USM Threshold) - Capture One scale 0..10, clamp to 1.0..5.0
+        double threshold = Math.Max(1.0, Math.Min(5.0, result.Physical.HazeLevel * 10));
         adjustments.Detail.MicroContrast = threshold;
     }
 

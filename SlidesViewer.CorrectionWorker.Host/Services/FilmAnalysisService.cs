@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using SlidesViewer.FilmAnalyzer;
 using SlidesViewer.FilmAnalyzer.Dtos;
@@ -17,16 +18,20 @@ public class FilmAnalysisService : IFilmAnalysisService
     private readonly string _captureOneScriptsFolder;
     private readonly string _tempDirectory;
 
+    private readonly ILogger<FilmAnalysisService> _logger;
+
     public FilmAnalysisService(
         IFilmScannerAnalyzer scannerAnalyzer,
         ICaptureOneStyleGenerator styleGenerator,
-        CaptureOneSettings captureOneSettings)
+        CaptureOneSettings captureOneSettings,
+        ILogger<FilmAnalysisService> logger)
     {
         _scannerAnalyzer = scannerAnalyzer;
         _styleGenerator = styleGenerator;
         _captureOneScriptsFolder = captureOneSettings.ScriptsFolder;
         _tempDirectory = Path.Combine(Path.GetTempPath(), "SlidesViewer");
         Directory.CreateDirectory(_tempDirectory);
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<string?> AnalyzeFileAsync(string filePath)
@@ -43,12 +48,17 @@ public class FilmAnalysisService : IFilmAnalysisService
 
             // Perform analysis synchronously (CPU-intensive)
             var analysisResult = _scannerAnalyzer.Analyze(filePath);
+            var jobId = Guid.NewGuid().ToString("N");
+            if (analysisResult.OptimizationLog != null)
+            {
+                _logger.LogInformation("[{Job}] Logging optimization steps", jobId);
+                _logger.LogInformation("[{@Steps}", analysisResult.OptimizationLog);
+            }
 
             // Save Capture One style with folder structure
             SaveCaptureOneStyle(filePath, analysisResult);
-
             Console.WriteLine($"[FilmAnalysisService] Analysis completed: {filePath}");
-            return Guid.NewGuid().ToString("N");
+            return jobId;
         }
         catch (Exception ex)
         {
