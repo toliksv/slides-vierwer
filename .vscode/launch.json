@@ -1,0 +1,44 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET: SlidesViewer.Host",
+            "type": "dotnet",
+            "request": "launch",
+            "preLaunchTask": "build-sln",
+            "projectPath": "${workspaceFolder}/SlidesViewer.Host/SlidesViewer.Host.csproj",
+            "launchConfigurationId": "TargetFramework=;http"
+        },
+        {
+            "name": ".NET: SlidesViewer.Web",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/SlidesViewer.Web/SlidesViewer.Web.csproj",
+            "cwd": "${workspaceFolder}/SlidesViewer.Web",
+            "launchConfigurationId": "TargetFramework=;http"
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ],
+    "compounds": [
+        {
+            "name": ".NET: SlidesViewer (Host + Web)",
+            "configurations": [
+                ".NET: SlidesViewer.Host",
+                ".NET: SlidesViewer.Web"
+            ],
+            "stopAll": true,
+            "presentation": {
+                "hidden": false,
+                "group": "slidesviewer",
+                "order": 0
+            }
+        }
+    ]
+}
+
+
+

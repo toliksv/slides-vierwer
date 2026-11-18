@@ -1,0 +1,5 @@
+@SlidesViewer_HostAddress = http://localhost:5041
+
+GET {{SlidesViewer_HostAddress}}/api/slides/categories?folderPath=E:\\слайды
+Accept: application/json
+

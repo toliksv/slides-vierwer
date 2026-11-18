@@ -1,0 +1,76 @@
+Готовый шаблон файла .gitignore для C# и .NET решений. Он создан на основе стандартного шаблона от Microsoft и исключает временные файлы сборки, кэш пакетов и локальные настройки IDE (Visual Studio, Rider, VS Code).
+gitignore
+## Сборка и результаты компиляции (.NET / C#)
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Пользовательские настройки Visual Studio
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+
+## JetBrains Rider
+.idea/
+*.sln.iml
+
+## Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+## Пакеты NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Результаты тестов и покрытия кода
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+
+## Публикация и развертывание
+[Pp]ublish/
+publish/
+*.publishsettings
+*.pubxml
+*.pubxml.user
+
+## Кэш StyleCop, ReSharper и других анализаторов
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+StyleCopReport.xml
+
+## Локальные базы данных (SQLite, LocalDB)
+*.mdf
+*.ldf
+*.ndf
+*.db
+*.db-shm
+*.db-wal
+
+## Файлы операционных систем
+.DS_Store
+Thumbs.db
+Используйте код с осторожностью.
+
+Как использовать
+
+• Создайте файл: Поместите файл с точным именем .gitignore (без расширения) в корневую папку вашего решения рядом с файлом .sln.
+• Очистите кэш (если нужно): Если какие-то лишние папки (например, bin или obj) уже попали в репозиторий до создания файла, выполните в терминале команду git rm -r --cached . и сделайте новый коммит.
+Нужно ли добавить в этот шаблон исключения для каких-то конкретных инструментов (например, Docker, Entity Framework или фронтенд-сборщиков вроде Node.js)?

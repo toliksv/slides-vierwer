@@ -1,0 +1,534 @@
+﻿@model SlidesViewer.Web.ViewModels.FolderScanViewModel
+@{
+    ViewData["Title"] = "Сканирование папки";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+
+        <!-- Форма ввода пути -->
+        <div class="card shadow-sm mb-4" style="position: relative;">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-3">
+                    <i class="bi bi-search me-2"></i>Введите путь к папке
+                </h5>
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text"><i class="bi bi-folder-fill"></i></span>
+                    <input type="text" id="folderPathInput" class="form-control"
+                           placeholder="@Model.DefaultFolderPath"
+                           aria-label="Путь к папке"
+                           autocomplete="off"
+                           data-default="@Model.DefaultFolderPath">
+                    <button class="btn btn-outline-secondary" type="button" id="btnPaste" title="Вставить из буфера обмена (Ctrl+V)">
+                        <i class="bi bi-clipboard me-1"></i>Вставить
+                    </button>
+                    <button class="btn btn-primary" type="button" id="btnAnalyze">
+                        <i class="bi bi-play-fill me-1"></i>Анализ
+                    </button>
+                </div>
+                <!-- Autocomplete dropdown для подсказок из файловой системы -->
+                <div id="folderAutocomplete" class="position-absolute bg-white border shadow-sm" style="display:none; z-index:1060; max-height:250px; overflow-y:auto; width:100%; top: 100%; left: 0;">
+                </div>
+                <div class="form-text mt-2">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Введите путь вручную или выберите из истории. Для быстрого копирования пути: выделите папку в проводнике, Shift+ПКМ → «Копировать как путь».
+                </div>
+            </div>
+        </div>
+
+        <!-- Сообщение об ошибке -->
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                @Model.ErrorMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+            </div>
+        }
+
+        <!-- Результаты -->
+        @if (Model.HasResults)
+        {
+            <!-- Итоговые карточки -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card shadow-sm bg-primary text-white h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-files display-6 mb-2"></i>
+                            <h6 class="mb-1">Всего файлов</h6>
+                            <h2 class="mb-0 fw-bold">@Model.TotalFiles</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow-sm bg-info text-white h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-tags display-6 mb-2"></i>
+                            <h6 class="mb-1">Категорий</h6>
+                            <h2 class="mb-0 fw-bold">@Model.TotalCategories</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow-sm bg-warning text-dark h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-folder2-open display-6 mb-2"></i>
+                            <h6 class="mb-1">Уникальных путей</h6>
+                            <h2 class="mb-0 fw-bold">@Model.TotalUniquePaths</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-table me-2"></i>Результаты сканирования</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0" id="categoriesTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%;" class="text-center">#</th>
+                                    <th style="width: 50%;" class="sortable" data-sort="name" onclick="sortTable('name')">
+                                        <span>Категория</span>
+                                        <span class="sort-indicator" data-column="name">
+                                            <i class="bi bi-chevron-double-up"></i>
+                                        </span>
+                                    </th>
+                                    <th style="width: 30%;" class="sortable" data-sort="relativePath" onclick="sortTable('relativePath')">
+                                        <span>Относительный путь</span>
+                                        <span class="sort-indicator" data-column="relativePath">
+                                            <i class="bi bi-chevron-double-up"></i>
+                                        </span>
+                                    </th>
+                                    <th style="width: 15%;" class="text-center sortable" data-sort="fileCount" onclick="sortTable('fileCount')">
+                                        <span>Кол-во файлов</span>
+                                        <span class="sort-indicator" data-column="fileCount">
+                                            <i class="bi bi-chevron-double-up"></i>
+                                        </span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var sortedCategories = Model.Categories.OrderByDescending(c => c.FileCount).ToList();
+                                    var maxCount = sortedCategories.Any() ? sortedCategories.Max(c => c.FileCount) : 0;
+                                    var rowIndex = 0;
+                                }
+                                @foreach (var category in sortedCategories)
+                                {
+                                    rowIndex++;
+                                    var rank = rowIndex;
+                                    string badgeStyle = "";
+                                    string badgeClass = "bg-success text-white";
+
+                                    if (rank <= 15 && maxCount > 0)
+                                    {
+                                        var t = (rank - 1) / 14.0;
+                                        var lightness = 45 - (int)(25 * t);
+                                        var textColor = lightness < 30 ? "#ddd" : "white";
+                                        badgeStyle = $"background-color: hsl(0, 85%, {lightness}%); color: {textColor};";
+                                        badgeClass = "";
+                                    }
+                                    var rowClass = rank <= 3 ? "fw-bold" : "";
+                                    var pathsHtml = string.Join(", ", category.RelativePaths.Take(3));
+                                    if (category.RelativePaths.Count > 3)
+                                    {
+                                        pathsHtml += $" <small class=\"text-muted\">(+{category.RelativePaths.Count - 3})</small>";
+                                    }
+                                    <tr class="@rowClass" data-name="@category.Name" data-filecount="@category.FileCount" data-relativepath="@pathsHtml.Replace("\"", "&quot;")">
+                                        <td class="text-center text-muted">@rowIndex</td>
+                                        <td>
+                                            <i class="bi bi-file-earmark-text icon-category me-2"></i>
+                                            @category.Name
+                                        </td>
+                                        <td>
+                                            <small class="text-monospace text-break" title="@string.Join(", ", category.RelativePaths)">
+                                                @Html.Raw(pathsHtml)
+                                            </small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill @badgeClass" style="@badgeStyle">
+                                                @category.FileCount
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var folderPathInput = document.getElementById('folderPathInput');
+            var btnAnalyze = document.getElementById('btnAnalyze');
+            var btnPaste = document.getElementById('btnPaste');
+            var autocompleteDiv = document.getElementById('folderAutocomplete');
+
+            var STORAGE_KEY = 'slidesViewerFolderHistory';
+            var USERNAME_KEY = 'slidesViewerUsername';
+            var MAX_HISTORY = 20;
+            var autocompleteTimeout = null;
+            var currentAutocompletePaths = [];
+            var defaultPath = folderPathInput.getAttribute('data-default') || '';
+
+            // Очистить placeholder при фокусе, если пользователь ещё не начал ввод
+            folderPathInput.addEventListener('focus', function () {
+                if (folderPathInput.value === defaultPath || folderPathInput.value === '') {
+                    folderPathInput.value = '';
+                }
+            });
+
+            // Вернуть placeholder при потере фокуса, если поле пустое
+            folderPathInput.addEventListener('blur', function () {
+                if (folderPathInput.value === '') {
+                    folderPathInput.value = defaultPath;
+                }
+            });
+
+            // Показать autocomplete с подсказками
+            function showAutocomplete(suggestions) {
+                if (!suggestions || suggestions.length === 0) {
+                    hideAutocomplete();
+                    return;
+                }
+
+                currentAutocompletePaths = suggestions;
+                autocompleteDiv.innerHTML = '';
+
+                suggestions.forEach(function (path, index) {
+                    var item = document.createElement('div');
+                    item.className = 'autocomplete-item p-2 border-bottom cursor-pointer';
+                    item.style.cssText = 'padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #dee2e6; font-family: monospace; font-size: 14px;';
+                    item.textContent = path;
+
+                    // Подсветка совпадения
+                    var inputValue = folderPathInput.value;
+                    if (inputValue && path.toLowerCase().startsWith(inputValue.toLowerCase())) {
+                        var matchLen = inputValue.length;
+                        item.innerHTML = '<strong>' + path.substring(0, matchLen) + '</strong>' + path.substring(matchLen);
+                    }
+
+                    item.addEventListener('mouseenter', function () {
+                        document.querySelectorAll('.autocomplete-item').forEach(function (el) {
+                            el.style.backgroundColor = '';
+                        });
+                        item.style.backgroundColor = '#e7f1ff';
+                    });
+
+                    item.addEventListener('click', function () {
+                        folderPathInput.value = path;
+                        hideAutocomplete();
+                        folderPathInput.focus();
+                    });
+
+                    autocompleteDiv.appendChild(item);
+                });
+
+                autocompleteDiv.style.display = 'block';
+                positionAutocomplete();
+            }
+
+            // Скрыть autocomplete
+            function hideAutocomplete() {
+                autocompleteDiv.style.display = 'none';
+                currentAutocompletePaths = [];
+            }
+
+            // Позиционировать autocomplete под полем ввода
+            function positionAutocomplete() {
+                var rect = folderPathInput.getBoundingClientRect();
+                autocompleteDiv.style.top = (rect.bottom + window.scrollY) + 'px';
+                autocompleteDiv.style.left = rect.left + 'px';
+                autocompleteDiv.style.width = rect.width + 'px';
+            }
+
+            // Загрузить подсказки из API
+            function loadFolderSuggestions(prefix) {
+                console.log('[AutoComplete] loadFolderSuggestions called with:', prefix);
+                
+                if (!prefix || prefix.length < 2) {
+                    console.log('[AutoComplete] Prefix too short, hiding');
+                    hideAutocomplete();
+                    return;
+                }
+
+                // Если путь содержит \ — запрашиваем подпапки у сервера
+                if (prefix.indexOf('\\') >= 0 || prefix.indexOf('/') >= 0) {
+                    var normalizedPrefix = prefix.replaceAll('/', '\\');
+                    console.log('[AutoComplete] Fetching folders for:', normalizedPrefix);
+                    fetch('/api/home/folders?prefix=' + encodeURIComponent(normalizedPrefix))
+                        .then(function (r) { 
+                            console.log('[AutoComplete] Response status:', r.status);
+                            return r.json(); 
+                        })
+                        .then(function (folders) {
+                            console.log('[AutoComplete] Folders received:', folders);
+                            showAutocomplete(folders);
+                        })
+                        .catch(function (err) {
+                            console.error('[AutoComplete] Fetch error:', err);
+                            hideAutocomplete();
+                        });
+                    return;
+                }
+
+                // Для путей без \ — ищем совпадения в истории и шаблонах
+                console.log('[AutoComplete] Using local suggestions for:', prefix);
+                showLocalSuggestions(prefix);
+            }
+
+            // Показать локальные подсказки (история + шаблоны)
+            function showLocalSuggestions(prefix) {
+                console.log('[AutoComplete] showLocalSuggestions called with:', prefix);
+                var username = getUsername() || '%USERNAME%';
+                var templates = [
+                    'C:\\Slides',
+                    'C:\\Users\\' + username + '\\Documents',
+                    'C:\\Users\\' + username + '\\OneDrive'
+                ];
+                var history = loadHistory();
+                var allPaths = templates.concat(history);
+                console.log('[AutoComplete] All paths:', allPaths);
+
+                var filtered = allPaths.filter(function (p) {
+                    return p.toLowerCase().startsWith(prefix.toLowerCase());
+                });
+                console.log('[AutoComplete] Filtered:', filtered);
+
+                if (filtered.length > 0 && filtered.length <= 5) {
+                    showAutocomplete(filtered);
+                } else {
+                    hideAutocomplete();
+                }
+            }
+
+            // Обработчик ввода в поле пути
+            folderPathInput.addEventListener('input', function () {
+                console.log('[AutoComplete] input event fired, value:', folderPathInput.value);
+                clearTimeout(autocompleteTimeout);
+                var value = folderPathInput.value.trim();
+
+                // Debounce 300ms
+                autocompleteTimeout = setTimeout(function () {
+                    loadFolderSuggestions(value);
+                }, 300);
+            });
+
+            // Закрыть autocomplete при клике вне
+            document.addEventListener('click', function (e) {
+                if (!autocompleteDiv.contains(e.target) && e.target !== folderPathInput) {
+                    hideAutocomplete();
+                }
+            });
+
+            // Навигация стрелками в autocomplete
+            folderPathInput.addEventListener('keydown', function (e) {
+                if (!autocompleteDiv.style.display || autocompleteDiv.style.display === 'none') {
+                    return;
+                }
+
+                var items = autocompleteDiv.querySelectorAll('.autocomplete-item');
+                if (items.length === 0) return;
+
+                var focused = autocompleteDiv.querySelector('.autocomplete-item:hover');
+                var index = Array.prototype.indexOf.call(items, focused);
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (index < items.length - 1) {
+                        if (focused) focused.style.backgroundColor = '';
+                        items[index + 1].style.backgroundColor = '#e7f1ff';
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (index > 0) {
+                        if (focused) focused.style.backgroundColor = '';
+                        items[index - 1].style.backgroundColor = '#e7f1ff';
+                    }
+                } else if (e.key === 'Enter' && index >= 0) {
+                    e.preventDefault();
+                    folderPathInput.value = items[index].textContent;
+                    hideAutocomplete();
+                    folderPathInput.focus();
+                } else if (e.key === 'Escape') {
+                    hideAutocomplete();
+                }
+            });
+
+            // Получить имя пользователя
+            function getUsername() {
+                var username = localStorage.getItem(USERNAME_KEY);
+                if (username) return username;
+                return null;
+            }
+
+            function fetchUsername() {
+                fetch('/api/home/username')
+                    .then(function (r) { return r.text(); })
+                    .then(function (u) {
+                        localStorage.setItem(USERNAME_KEY, u);
+                        return u;
+                    })
+                    .catch(function () { return ''; });
+            }
+
+            // Загрузить историю из localStorage
+            function loadHistory() {
+                try {
+                    var data = localStorage.getItem(STORAGE_KEY);
+                    return data ? JSON.parse(data) : [];
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            // Сохранить путь в историю (без дубликатов, ограничить размер)
+            function saveToHistory(path) {
+                if (!path) return;
+                var history = loadHistory();
+                // Удалить дубликат, если есть
+                history = history.filter(function (p) { return p !== path; });
+                // Добавить в начало
+                history.unshift(path);
+                // Ограничить количество
+                if (history.length > MAX_HISTORY) {
+                    history = history.slice(0, MAX_HISTORY);
+                }
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+                } catch (e) {
+                    // Переполнение localStorage — удалить старые
+                    history = history.slice(0, MAX_HISTORY - 5);
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+                    } catch (e2) { /* ignore */ }
+                }
+            }
+
+            // Вставить из буфера обмена
+            btnPaste.addEventListener('click', function () {
+                navigator.clipboard.readText().then(function (text) {
+                    folderPathInput.value = text.trim();
+                    folderPathInput.focus();
+                }).catch(function () {
+                    // Fallback: просто фокус, пользователь нажмёт Ctrl+V
+                    folderPathInput.focus();
+                });
+            });
+
+            // === Кнопка "Анализ" ===
+            btnAnalyze.addEventListener('click', function () {
+                var path = folderPathInput.value.trim();
+                if (!path) {
+                    alert('Пожалуйста, введите путь к папке.');
+                    folderPathInput.focus();
+                    return;
+                }
+
+                // Сохраняем в историю
+                saveToHistory(path);
+
+                // Создаём и отправляем форму
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/Home/Index';
+                form.style.display = 'none';
+
+                var pathInput = document.createElement('input');
+                pathInput.type = 'hidden';
+                pathInput.name = 'folderPath';
+                pathInput.value = path;
+                form.appendChild(pathInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            });
+
+            // Отправка по Enter в поле ввода
+            folderPathInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    btnAnalyze.click();
+                }
+            });
+
+            // Инициализация
+            console.log('[AutoComplete] Initializing...');
+            console.log('[AutoComplete] folderPathInput:', folderPathInput);
+            console.log('[AutoComplete] autocompleteDiv:', autocompleteDiv);
+            console.log('[AutoComplete] Initialization complete');
+
+            // === Сортировка таблицы ===
+            var currentSort = { column: null, direction: 'asc' };
+
+            window.sortTable = function (column) {
+                var table = document.getElementById('categoriesTable');
+                var tbody = table.querySelector('tbody');
+                var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'), 0);
+
+                if (currentSort.column === column) {
+                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSort.column = column;
+                    currentSort.direction = 'asc';
+                }
+
+                rows.sort(function (a, b) {
+                    var valA, valB;
+
+                    if (column === 'name') {
+                        valA = a.getAttribute('data-name') || '';
+                        valB = b.getAttribute('data-name') || '';
+                        return currentSort.direction === 'asc'
+                            ? valA.localeCompare(valB, 'ru')
+                            : valB.localeCompare(valA, 'ru');
+                    } else if (column === 'fileCount') {
+                        valA = parseInt(a.getAttribute('data-filecount') || '0', 10);
+                        valB = parseInt(b.getAttribute('data-filecount') || '0', 10);
+                        return currentSort.direction === 'asc' ? valA - valB : valB - valA;
+                    } else if (column === 'relativePath') {
+                        valA = a.getAttribute('data-relativepath') || '';
+                        valB = b.getAttribute('data-relativepath') || '';
+                        return currentSort.direction === 'asc'
+                            ? valA.localeCompare(valB)
+                            : valB.localeCompare(valA);
+                    }
+                    return 0;
+                });
+
+                rows.forEach(function (row) {
+                    tbody.appendChild(row);
+                });
+
+                updateSortIndicators(column);
+            };
+
+            function updateSortIndicators(activeColumn) {
+                var indicators = document.querySelectorAll('.sort-indicator');
+                indicators.forEach(function (indicator) {
+                    var col = indicator.getAttribute('data-column');
+                    var icon = indicator.querySelector('i');
+
+                    icon.className = 'bi bi-chevron-double-up';
+
+                    if (col === activeColumn) {
+                        if (currentSort.direction === 'asc') {
+                            icon.className = 'bi bi-chevron-up text-primary fw-bold';
+                        } else {
+                            icon.className = 'bi bi-chevron-down text-primary fw-bold';
+                        }
+                    }
+                });
+            }
+        })();
+    </script>
+}

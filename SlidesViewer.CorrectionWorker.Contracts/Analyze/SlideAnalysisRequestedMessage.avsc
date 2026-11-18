@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "SlideAnalysisRequestedMessage",
+  "namespace": "SlidesViewer.CorrectionWorker.Contracts.Analyze",
+  "fields": [
+    { "name": "SlideFilePath", "type": "string" }
+  ]
+}

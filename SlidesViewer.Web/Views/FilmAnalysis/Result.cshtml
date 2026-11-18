@@ -1,0 +1,97 @@
+@model SlidesViewer.FilmAnalyzer.Dtos.FilmAnalysisResult
+
+@{
+    ViewData["Title"] = "Результат анализа";
+}
+
+<h2>Результат анализа</h2>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Общая оценка качества: @Model.Quality.OverallScore / 100</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Цветовая деградация</h6>
+                <ul>
+                    <li>Тип оттенка: <strong>@Model.Color.Cast</strong></li>
+                    <li>Интенсивность: <strong>@Model.Color.CastIntensity%</strong></li>
+                    <li>Выцветание каналов:</li>
+                    <ul>
+                        <li>Красный: @Model.Color.R_Fading%</li>
+                        <li>Зелёный: @Model.Color.G_Fading%</li>
+                        <li>Синий: @Model.Color.B_Fading%</li>
+                    </ul>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>Физические дефекты</h6>
+                <ul>
+                    <li>Царапины: <strong>@Model.Physical.ScratchCount</strong></li>
+                    <li>Пыль: <strong>@Model.Physical.DustCount</strong></li>
+                    <li>Дымка: <strong>@Model.Physical.HazeLevel%</strong></li>
+                    <li>Туман базового слоя: <strong>@Model.Physical.BaseFogDensity</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Рекомендуемая коррекция (Capture One)</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Экспозиция и тон</h6>
+                <ul>
+                    <li>Экспозиция: <strong>+@Model.Corrections.Exposure.Exposure Stops</strong></li>
+                    <li>Баланс белого: <strong>@Model.Corrections.WhiteBalance.ColorTemperature K</strong></li>
+                    <li>Тональная кривая: <strong>@Model.Corrections.ToneCurve.CurveType</strong></li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>Цвет и детали</h6>
+                <ul>
+                    <li>Калибровка: <strong>ShadowTint=@Model.Corrections.ColorCalibration.ShadowTint</strong></li>
+                    <li>HDR: <strong>Contrast=@Model.Corrections.HdrToneMapping.Contrast</strong></li>
+                    <li>Детализация: <strong>Sharpness=@Model.Corrections.Detail.Sharpness</strong></li>
+                    <li>Шум: <strong>Luminance=@Model.Corrections.NoiseReduction.Luminance</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Гистограмма</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6>Красный</h6>
+                <p>Среднее: @Model.Color.R_Histogram.Mean.ToString("F1")</p>
+                <p>Стд. отклонение: @Model.Color.R_Histogram.StdDev.ToString("F1")</p>
+            </div>
+            <div class="col-md-4">
+                <h6>Зелёный</h6>
+                <p>Среднее: @Model.Color.G_Histogram.Mean.ToString("F1")</p>
+                <p>Стд. отклонение: @Model.Color.G_Histogram.StdDev.ToString("F1")</p>
+            </div>
+            <div class="col-md-4">
+                <h6>Синий</h6>
+                <p>Среднее: @Model.Color.B_Histogram.Mean.ToString("F1")</p>
+                <p>Стд. отклонение: @Model.Color.B_Histogram.StdDev.ToString("F1")</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div>
+    <p><strong>Источник:</strong> @Model.SourceFilePath</p>
+    <p><strong>Размер:</strong> @Model.Width x @Model.Height</p>
+    <p><strong>Дата анализа:</strong> @Model.AnalyzedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
+</div>

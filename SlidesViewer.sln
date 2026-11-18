@@ -1,0 +1,71 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.Host", "SlidesViewer.Host\SlidesViewer.Host.csproj", "{8D1502E6-58F6-4087-9F58-42D7E1B159C9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.Host.Contracts", "SlidesViewer.Host.Contracts\SlidesViewer.Host.Contracts.csproj", "{08A8C976-FA55-4B5D-A04C-889533A550F6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AAF3975C-36FC-818C-AEC2-1665EE290966}"
+	ProjectSection(SolutionItems) = preProject
+		.clinerules = .clinerules
+	
+		..\..\..\ИИ слайды\test_style.costyle = ..\..\..\ИИ слайды\test_style.costyle
+	
+		..\..\..\ИИ слайды\Scripts\ИИ слайды\Нальчик_google.costyle = ..\..\..\ИИ слайды\Scripts\ИИ слайды\Нальчик_google.costyle
+	
+		..\..\..\ИИ слайды\Scripts\ИИ слайды\Нальчик_п1_07.costyle = ..\..\..\ИИ слайды\Scripts\ИИ слайды\Нальчик_п1_07.costyle
+	
+		.gitignore = .gitignore
+	EndProjectSectionEndProjectSectionEndProjectSectionEndProjectSectionEndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.Host.Tests", "SlidesViewer.Host.Tests\SlidesViewer.Host.Tests.csproj", "{03098DC8-984A-4F15-A4F0-34B491577C5C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.Web", "SlidesViewer.Web\SlidesViewer.Web.csproj", "{B4A7C3D1-8F2E-4B6A-9D3C-5E7F8A1B2C4D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.FilmAnalyzer", "SlidesViewer.FilmAnalyzer\SlidesViewer.FilmAnalyzer.csproj", "{DEBC529D-807A-4B15-ACE9-F6139BA8FCA9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.CorrectionWorker.Host", "SlidesViewer.CorrectionWorker.Host\SlidesViewer.CorrectionWorker.Host.csproj", "{5FE023E7-1B81-4D50-A43F-CC28D648B5D4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.CorrectionWorker.Contracts", "SlidesViewer.CorrectionWorker.Contracts\SlidesViewer.CorrectionWorker.Contracts.csproj", "{7A3B9C2D-EF45-4A6B-8C9D-1E2F3A4B5C6D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8D1502E6-58F6-4087-9F58-42D7E1B159C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D1502E6-58F6-4087-9F58-42D7E1B159C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D1502E6-58F6-4087-9F58-42D7E1B159C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D1502E6-58F6-4087-9F58-42D7E1B159C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08A8C976-FA55-4B5D-A04C-889533A550F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08A8C976-FA55-4B5D-A04C-889533A550F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08A8C976-FA55-4B5D-A04C-889533A550F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08A8C976-FA55-4B5D-A04C-889533A550F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03098DC8-984A-4F15-A4F0-34B491577C5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03098DC8-984A-4F15-A4F0-34B491577C5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03098DC8-984A-4F15-A4F0-34B491577C5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03098DC8-984A-4F15-A4F0-34B491577C5C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4A7C3D1-8F2E-4B6A-9D3C-5E7F8A1B2C4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4A7C3D1-8F2E-4B6A-9D3C-5E7F8A1B2C4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4A7C3D1-8F2E-4B6A-9D3C-5E7F8A1B2C4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4A7C3D1-8F2E-4B6A-9D3C-5E7F8A1B2C4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DEBC529D-807A-4B15-ACE9-F6139BA8FCA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEBC529D-807A-4B15-ACE9-F6139BA8FCA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEBC529D-807A-4B15-ACE9-F6139BA8FCA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEBC529D-807A-4B15-ACE9-F6139BA8FCA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FE023E7-1B81-4D50-A43F-CC28D648B5D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FE023E7-1B81-4D50-A43F-CC28D648B5D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FE023E7-1B81-4D50-A43F-CC28D648B5D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FE023E7-1B81-4D50-A43F-CC28D648B5D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A3B9C2D-EF45-4A6B-8C9D-1E2F3A4B5C6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A3B9C2D-EF45-4A6B-8C9D-1E2F3A4B5C6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A3B9C2D-EF45-4A6B-8C9D-1E2F3A4B5C6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A3B9C2D-EF45-4A6B-8C9D-1E2F3A4B5C6D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
