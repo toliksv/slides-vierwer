@@ -1,7 +1,10 @@
 using System.Text.Json.Serialization;
 
-namespace SlidesViewer.FilmAnalyzer.Dtos;
+namespace SlidesViewer.FilmAnalyzer.Dtos.Common;
 
+/// <summary>
+/// Гистограмма значений пикселей по каналу: распределение, мин/макс, среднее и стандартное отклонение.
+/// </summary>
 public class HistogramData
 {
     [JsonPropertyOrder(0)]

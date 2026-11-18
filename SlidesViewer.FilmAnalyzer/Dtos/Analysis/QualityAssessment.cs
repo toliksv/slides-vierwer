@@ -1,7 +1,10 @@
 using System.Text.Json.Serialization;
 
-namespace SlidesViewer.FilmAnalyzer.Dtos;
+namespace SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 
+/// <summary>
+/// Оценка качества: общие и раздельные баллы за цвет, резкость, дефекты и динамический диапазон.
+/// </summary>
 public class QualityAssessment
 {
     [JsonPropertyOrder(0)]

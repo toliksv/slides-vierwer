@@ -1,7 +1,10 @@
 using System.Text.Json.Serialization;
 
-namespace SlidesViewer.FilmAnalyzer.Dtos;
+namespace SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 
+/// <summary>
+/// Анализ физических дефектов: количество царапин и пыли, уровень дымки, плотность фоновой вуали, локальный контраст и наличие рамки.
+/// </summary>
 public class PhysicalDefectAnalysis
 {
     [JsonPropertyOrder(0)]

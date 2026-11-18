@@ -1,6 +1,8 @@
 using OpenCvSharp;
 using SlidesViewer.FilmAnalyzer.Analyzers;
 using SlidesViewer.FilmAnalyzer.Dtos;
+using SlidesViewer.FilmAnalyzer.Dtos.Adjustments;
+using SlidesViewer.FilmAnalyzer.Dtos.Common;
 using SlidesViewer.FilmAnalyzer.Generators;
 using SlidesViewer.FilmAnalyzer.Services;
 
@@ -17,17 +19,20 @@ public class FilmScannerAnalyzer : IFilmScannerAnalyzer
     private readonly IPhysicalDefectAnalyzer _physicalAnalyzer;
     private readonly IQualityAssessmentService _qualityAssessment;
     private readonly ICaptureOneStyleGenerator _styleGenerator;
+    private readonly IIterativeCorrectionOptimizer _optimizer;
 
     public FilmScannerAnalyzer(
         IColorDegradationAnalyzer colorAnalyzer,
         IPhysicalDefectAnalyzer physicalAnalyzer,
         IQualityAssessmentService qualityAssessment,
-        ICaptureOneStyleGenerator styleGenerator)
+        ICaptureOneStyleGenerator styleGenerator,
+        IIterativeCorrectionOptimizer? optimizer = null)
     {
         _colorAnalyzer = colorAnalyzer;
         _physicalAnalyzer = physicalAnalyzer;
         _qualityAssessment = qualityAssessment;
         _styleGenerator = styleGenerator;
+        _optimizer = optimizer ?? new IterativeCorrectionOptimizer();
     }
 
     public FilmAnalysisResult Analyze(string filePath)
@@ -57,6 +62,12 @@ public class FilmScannerAnalyzer : IFilmScannerAnalyzer
         // Step 4: Generate corrections
         result.Corrections = GenerateCorrections(result);
 
+        // Step 5: Iterative optimization
+        bool isNegative = (result.Color.R_StdDev + result.Color.G_StdDev + result.Color.B_StdDev) / 3.0 < 8500;
+        using var optImage = Cv2.ImRead(filePath, ImreadModes.Color | ImreadModes.AnyDepth);
+        result.Corrections = _optimizer.Optimize(optImage, result.Corrections, isNegative, out var optLog);
+        result.OptimizationLog = optLog;
+
         result.AnalyzedAt = DateTime.UtcNow;
 
         return result;
@@ -66,28 +77,71 @@ public class FilmScannerAnalyzer : IFilmScannerAnalyzer
     {
         var adjustments = new CaptureOneAdjustments();
 
-        // Exposure correction based on histogram mean
+        // Branch correction logic by detected film medium type
+        switch (result.Color.MediumType)
+        {
+            case FilmMediumType.ColorNegative90s:
+                AdjustColorNegativeCorrections(adjustments, result);
+                break;
+            case FilmMediumType.Slide80s:
+            default:
+                AdjustSlideCorrections(adjustments, result);
+                break;
+        }
+
+        // Detail and noise reduction are universal
+        AdjustDetail(adjustments, result);
+        AdjustNoiseReduction(adjustments, result);
+
+        return adjustments;
+    }
+
+    private void AdjustSlideCorrections(CaptureOneAdjustments adjustments, FilmAnalysisResult result)
+    {
+        // Exposure: soft correction, range -0.6..+0.8
         AdjustExposure(adjustments, result);
+        adjustments.Exposure.Exposure = Clamp(adjustments.Exposure.Exposure, -0.6, 0.8);
 
-        // White balance correction
+        // White balance: color temperature 5100..5900 K, tint -4..+4
         AdjustWhiteBalance(adjustments, result);
+        adjustments.WhiteBalance.ColorTemperature = Clamp(adjustments.WhiteBalance.ColorTemperature, 5100, 5900);
+        adjustments.WhiteBalance.Tint = Clamp(adjustments.WhiteBalance.Tint, -4, 4);
 
-        // Tone curve (S-curve for contrast recovery)
+        // Soft S-curve for slides
         AdjustToneCurve(adjustments, result);
 
         // Color calibration
         AdjustColorCalibration(adjustments, result);
 
-        // HDR tone mapping
+        // HDR tone mapping (Brightness = 0)
+        AdjustHdrToneMapping(adjustments, result);
+    }
+
+    private void AdjustColorNegativeCorrections(CaptureOneAdjustments adjustments, FilmAnalysisResult result)
+    {
+        // Exposure: wider range for negatives, -1.0..+1.2
+        AdjustExposure(adjustments, result);
+        adjustments.Exposure.Exposure = Clamp(adjustments.Exposure.Exposure, -1.0, 1.2);
+
+        // White balance: broader range for negative green-brown cast
+        AdjustWhiteBalance(adjustments, result);
+        adjustments.WhiteBalance.ColorTemperature = Clamp(adjustments.WhiteBalance.ColorTemperature, 3500, 7500);
+        adjustments.WhiteBalance.Tint = Clamp(adjustments.WhiteBalance.Tint, -15, 15);
+
+        // Strong S-curve for color negatives
+        AdjustColorNegativeToneCurve(adjustments);
+
+        // Color calibration: compensate green-brown shadow cast
+        AdjustColorCalibration(adjustments, result);
+
+        // HDR tone mapping (Brightness = 0)
         AdjustHdrToneMapping(adjustments, result);
 
-        // Detail enhancement
-        AdjustDetail(adjustments, result);
-
-        // Noise reduction
-        AdjustNoiseReduction(adjustments, result);
-
-        return adjustments;
+        // Per-channel highlight/shadow targets
+        double highlightTarget = 0.90 + (adjustments.Exposure.Exposure > 0 ? 0.06 : 0.0);
+        double shadowTarget = 0.08 - (adjustments.Exposure.Exposure > 0 ? 0.05 : 0.0);
+        adjustments.Exposure.Highlight = Clamp(highlightTarget, 0.90, 0.96);
+        adjustments.Exposure.Shadow = Clamp(shadowTarget, 0.03, 0.08);
     }
 
     private void AdjustExposure(CaptureOneAdjustments adjustments, FilmAnalysisResult result)
@@ -143,49 +197,53 @@ public class FilmScannerAnalyzer : IFilmScannerAnalyzer
 
     private void AdjustToneCurve(CaptureOneAdjustments adjustments, FilmAnalysisResult result)
     {
-        // Generate S-curve control points
-        // Input values in 0-65535 range
-        
-        // Calculate black and white points from histograms
-        double blackPoint = CalculatePercentile(result.Color.R_Histogram, 2);
-        double whitePoint = CalculatePercentile(result.Color.R_Histogram, 98);
-        
-        if (whitePoint <= blackPoint)
-        {
-            blackPoint = 0;
-            whitePoint = 65535;
-        }
+        bool isNegative = (result.Color.R_StdDev + result.Color.G_StdDev + result.Color.B_StdDev) / 3.0 < 8500;
 
-        // S-curve control points (input, output)
-        // Shadow is slightly lifted to avoid crushed blacks.
-        // Midpoint stays close to 0.5 to avoid compounding with channel curves.
-        // Highlight is slightly compressed to preserve detail.
+        // Strictly monotonic tone curve — no V-shaped inflections
         int[] points = new int[10];
-        points[0] = 0;
-        points[1] = 0;
-        
-        // Shadow point (20% of range, slight lift to keep shadows from crushing)
-        double shadowInput = blackPoint + (whitePoint - blackPoint) * 0.2;
-        points[2] = (int)shadowInput;
-        points[3] = (int)(shadowInput * 1.02); // Slight lift, not darkening
-        
-        // Midpoint (50%, NEUTRAL — channel curves handle color correction,
-        // so luminance midtone must stay at 0.5 to avoid compounding effects)
-        points[4] = (int)(blackPoint + (whitePoint - blackPoint) * 0.5);
-        points[5] = 32768; // Neutral midtone — no boost, no cut
-        
-        // Highlight point (80%, slight compression)
-        points[6] = (int)(blackPoint + (whitePoint - blackPoint) * 0.8);
-        points[7] = (int)((blackPoint + (whitePoint - blackPoint) * 0.8 - 32768) * 0.95 + 32768);
-        
-        points[8] = (int)whitePoint;
-        points[9] = (int)whitePoint;
+        points[0] = 0;          points[1] = 0;
+        points[2] = 16384;      points[3] = isNegative ? 14000 : 15800;
+        points[4] = 32768;      points[5] = 32768;
+        points[6] = 49152;      points[7] = isNegative ? 51500 : 49700;
+        points[8] = 65535;      points[9] = 65535;
 
         adjustments.ToneCurve.LuminancePoints = points;
         adjustments.ToneCurve.CurveType = "S-Curve";
 
-        // Generate per-channel RGB curves based on color channel analysis
         GenerateChannelCurves(adjustments, result);
+    }
+
+    /// <summary>
+    /// Moderate S-curve for color negatives: shadow lift and highlight compression
+    /// to counter the green-brown shadow cast and low-contrast negative appearance.
+    /// Uses fixed X coordinates to prevent solarization.
+    /// </summary>
+    private void AdjustColorNegativeToneCurve(CaptureOneAdjustments adjustments)
+    {
+        // Fixed monotonic X coordinates
+        const int X0 = 0;
+        const int X1 = 16384; // 25%
+        const int X2 = 32768; // 50%
+        const int X3 = 49152; // 75%
+        const int X4 = 65535; // 100%
+
+        // Moderate S-curve: 25% -> 21%, 50% -> 50%, 75% -> 79%
+        int[] points = new int[10];
+        points[0] = X0; points[1] = 0;
+        points[2] = X1; points[3] = (int)(0.21 * 65535); // 13762
+        points[4] = X2; points[5] = 32768;
+        points[6] = X3; points[7] = (int)(0.79 * 65535); // 51773
+        points[8] = X4; points[9] = 65535;
+
+        // Strict monotonicity guard
+        for (int i = 3; i < points.Length; i += 2)
+        {
+            if (points[i + 1] <= points[i - 1])
+                points[i + 1] = points[i - 1] + 1;
+        }
+
+        adjustments.ToneCurve.LuminancePoints = points;
+        adjustments.ToneCurve.CurveType = "Moderate S-Curve";
     }
 
     /// <summary>
@@ -290,19 +348,26 @@ public class FilmScannerAnalyzer : IFilmScannerAnalyzer
         // Shadow tint (magenta-green balance) — keep subtle
         adjustments.ColorCalibration.ShadowTint = Math.Max(-20, Math.Min(20, rDiff / 3000.0));
 
-        // Grey-world white balance with tight clamped gains
-        // Uses the average of all channels as reference, not just green.
-        // Gains are clamped to avoid extreme color casts from channel imbalance.
-        const double GainMin = 0.75;
-        const double GainMax = 1.3;
+        // Grey-world white balance with tightly clamped gains and damping.
+        // Gain range narrowed to 0.95..1.05 (±5%) with 0.3 damping factor
+        // to prevent salmon/bleach casts on water and other artifacts.
+        const double GainMin = 0.95;
+        const double GainMax = 1.05;
+        const double DampingFactor = 0.3;
         
         double avgMean = (result.Color.R_Mean + result.Color.G_Mean + result.Color.B_Mean) / 3.0;
         
         if (avgMean > 0)
         {
-            adjustments.ColorCalibration.MidtoneRedGain = Clamp(avgMean / result.Color.R_Mean, GainMin, GainMax);
+            double rawRGain = avgMean / result.Color.R_Mean;
+            double rawBGain = avgMean / result.Color.B_Mean;
+
+            double dampedRGain = 1.0 + Clamp((rawRGain - 1.0) * DampingFactor, -0.05, 0.05);
+            double dampedBGain = 1.0 + Clamp((rawBGain - 1.0) * DampingFactor, -0.05, 0.05);
+
+            adjustments.ColorCalibration.MidtoneRedGain = Clamp(dampedRGain, GainMin, GainMax);
             adjustments.ColorCalibration.MidtoneGreenGain = 1.0;
-            adjustments.ColorCalibration.MidtoneBlueGain = Clamp(avgMean / result.Color.B_Mean, GainMin, GainMax);
+            adjustments.ColorCalibration.MidtoneBlueGain = Clamp(dampedBGain, GainMin, GainMax);
         }
         else
         {
@@ -331,23 +396,20 @@ public class FilmScannerAnalyzer : IFilmScannerAnalyzer
 
     private void AdjustHdrToneMapping(CaptureOneAdjustments adjustments, FilmAnalysisResult result)
     {
+        // Brightness disabled — Exposure handles global brightness to avoid conflict
+        adjustments.HdrToneMapping.Brightness = 0;
+
         // Contrast based on dynamic range
         double dynamicRange = result.Color.R_Histogram.MaxValue - result.Color.R_Histogram.MinValue;
         double normalizedRange = dynamicRange / 65535.0;
-        
         adjustments.HdrToneMapping.Contrast = normalizedRange * 2.0;
-        
+
         // Highlight and shadow recovery based on histogram tails
         double shadowLevel = CalculatePercentile(result.Color.R_Histogram, 5) / 65535.0;
         double highlightLevel = 1.0 - (CalculatePercentile(result.Color.R_Histogram, 95) / 65535.0);
-        
         adjustments.HdrToneMapping.ShadowRecovery = shadowLevel * 50;
         adjustments.HdrToneMapping.HighlightRecovery = highlightLevel * 50;
-        
-        // Brightness adjustment
-        double avgMean = (result.Color.R_Mean + result.Color.G_Mean + result.Color.B_Mean) / 3.0;
-        adjustments.HdrToneMapping.Brightness = (avgMean - 32768.0) / 32768.0;
-        
+
         // Saturation preservation
         adjustments.HdrToneMapping.Saturation = 10.0 * (1.0 - result.Color.OverallSaturation);
     }

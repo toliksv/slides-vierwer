@@ -1,5 +1,5 @@
 ﻿using OpenCvSharp;
-using SlidesViewer.FilmAnalyzer.Dtos;
+using SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 using SlidesViewer.FilmAnalyzer.Utilities;
 
 namespace SlidesViewer.FilmAnalyzer.Analyzers;
@@ -106,7 +106,7 @@ public class PhysicalDefectAnalyzer : IPhysicalDefectAnalyzer
         int dustCount = 0;
         for (int i = 1; i < numLabels; i++) // Skip background
         {
-            double area = statsMat.At<double>(i, 4);
+            int area = statsMat.At<int>(i, (int)ConnectedComponentsTypes.Area);
             if (area >= 2 && area <= 100) // Dust is small but not noise
                 dustCount++;
         }
@@ -146,24 +146,63 @@ public class PhysicalDefectAnalyzer : IPhysicalDefectAnalyzer
 
     private double CalculateBaseFog(Mat image)
     {
-        // Base fog is the minimum pixel value across all channels
-        // High minimum = strong fogging
-        
-        Mat[] channels = image.Split();
-        
+        // Use normalized 16-bit image; crop 8% from edges to exclude frame artifacts
+        using var normalized = ImageNormalizationUtility.NormalizeTo16BitColor(image);
+        int crop = (int)(Math.Min(normalized.Rows, normalized.Cols) * 0.08);
+        using var cropped = normalized[new Rect(crop, crop, normalized.Cols - 2 * crop, normalized.Rows - 2 * crop)].Clone();
+
+        Mat[] channels = cropped.Split();
+
         double minFog = double.MaxValue;
-        
-        foreach (var channel in channels)
+
+        foreach (var ch in channels)
         {
-            // Find minimum non-zero value (ignore pure black)
-            Cv2.MinMaxLoc(channel, out double minVal, out double maxVal, out _, out _, new Mat());
-            
-            if (minVal > 0 && minVal < minFog)
-                minFog = minVal;
+            double p1 = CalculatePercentileFromHistogram(ch, 1.0);
+            if (p1 < minFog)
+                minFog = p1;
         }
 
+        foreach (var ch in channels)
+            ch.Dispose();
+
         // Normalize to 0-1 range (relative to 16-bit depth)
-        return Math.Min(1.0, minFog / 32768.0);
+        return Math.Min(1.0, minFog / 65535.0);
+    }
+
+    private static double CalculatePercentileFromHistogram(Mat channel, double percentile)
+    {
+        // Build a 256-bin histogram from the channel
+        const int bins = 256;
+        long[] hist = new long[bins];
+
+        int rows = channel.Rows;
+        int cols = channel.Cols;
+        int step = Math.Max(1, (rows * cols) / 500000);
+        long total = 0;
+
+        for (int y = 0; y < rows; y += step)
+        {
+            for (int x = 0; x < cols; x += step)
+            {
+                ushort v = channel.Get<ushort>(y, x);
+                int bin = Math.Min(bins - 1, (int)(v * bins / 65535));
+                hist[bin]++;
+                total++;
+            }
+        }
+
+        if (total == 0) return 0;
+
+        double target = percentile / 100.0 * total;
+        long cumulative = 0;
+        for (int i = 0; i < bins; i++)
+        {
+            cumulative += hist[i];
+            if (cumulative >= target)
+                return i * (65535.0 / bins);
+        }
+
+        return 65535.0;
     }
 
     private double CalculateLocalContrast(Mat gray)
@@ -193,26 +232,22 @@ public class PhysicalDefectAnalyzer : IPhysicalDefectAnalyzer
         // Look for uniform dark borders around the image edges
         int rows = image.Rows;
         int cols = image.Cols;
-        
+
         // Sample the border regions (5% from each edge)
         int borderSize = Math.Min(rows, cols) / 20;
-        
-        // Create a mask for the border
-        using var mask = Mat.Zeros(rows, cols, MatType.CV_8UC1);
+
+        // Create a mask for the border: start with all-255, then zero the center
+        using var mask = Mat.Ones(rows, cols, MatType.CV_8UC1);
         Rect centerRect = new(borderSize, borderSize, cols - 2 * borderSize, rows - 2 * borderSize);
-        Cv2.Rectangle(mask, centerRect, new Scalar(0), -1); // Clear center
-        
-        // Calculate mean of border region
-        using var borderMasked = new Mat();
-        Cv2.BitwiseAnd(image, image, borderMasked, mask);
-        
-        Scalar borderMean = Cv2.Mean(borderMasked);
-        
+        Cv2.Rectangle(mask, centerRect, new Scalar(0), -1); // Zero center → mask only borders
+
+        // Calculate mean of border region using the mask directly
+        Scalar borderMean = Cv2.Mean(image, mask);
+
         // Compare average brightness
         using var centerRegion = image[new Rect(cols / 4, rows / 4, cols / 2, rows / 2)];
         Scalar centerMean = Cv2.Mean(centerRegion);
-        
-        // Compare average brightness
+
         double borderBrightness = (borderMean.Val0 + borderMean.Val1 + borderMean.Val2) / 3.0;
         double centerBrightness = (centerMean.Val0 + centerMean.Val1 + centerMean.Val2) / 3.0;
 

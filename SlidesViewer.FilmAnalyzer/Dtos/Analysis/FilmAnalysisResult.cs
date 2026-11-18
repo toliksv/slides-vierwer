@@ -1,7 +1,12 @@
 using System.Text.Json.Serialization;
+using SlidesViewer.FilmAnalyzer.Dtos.Adjustments;
+using SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 
 namespace SlidesViewer.FilmAnalyzer.Dtos;
 
+/// <summary>
+/// Результат полного анализа слайда/плёнки, включающий анализ цвета, физические дефекты, оценку качества и рекомендуемые коррекции.
+/// </summary>
 public class FilmAnalysisResult
 {
     [JsonPropertyOrder(0)]
@@ -27,6 +32,9 @@ public class FilmAnalysisResult
 
     [JsonPropertyOrder(7)]
     public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
+
+    [JsonPropertyOrder(8)]
+    public List<string> OptimizationLog { get; set; } = new();
 
     public FilmAnalysisResult()
     {

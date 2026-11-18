@@ -44,7 +44,11 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
         AddElement("CnrAmount", FormatValue(analysis.Corrections.NoiseReduction.Color));
         AddElement("ColorBalance", FormatColorBalance3(1.0, 1.0, 1.0));
         AddElement("ColorBalanceHighlight", FormatColorBalance3(1.0, 1.0, 1.0));
-        AddElement("ColorBalanceMidtone", FormatColorBalance3(1.0, 1.0, 1.0));
+        AddElement("ColorBalanceMidtone", FormatColorBalance3(
+            analysis.Corrections.ColorCalibration.MidtoneRedGain,
+            analysis.Corrections.ColorCalibration.MidtoneGreenGain,
+            analysis.Corrections.ColorCalibration.MidtoneBlueGain));
+        AddElement("ColorBalanceShadow", FormatColorBalance3(1.0, 1.0, 1.0));
         AddElement("Contrast", FormatValue(analysis.Corrections.HdrToneMapping.Contrast));
         AddElement("DehazeAmount", FormatValue(0));
         AddElement("DehazeColor", "0;0;0");
@@ -55,30 +59,14 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
         AddElement("FilmGrainGranularity", FormatValue(50));
         AddElement("FilmGrainType", FormatValue(0));
 
-        // Black levels per channel
-        AddElement("BlackLevelRed", FormatValue(analysis.Corrections.Exposure.BlackLevelRed));
-        AddElement("BlackLevelGreen", FormatValue(analysis.Corrections.Exposure.BlackLevelGreen));
-        AddElement("BlackLevelBlue", FormatValue(analysis.Corrections.Exposure.BlackLevelBlue));
-
         // --- Tone Curves ---
         AddElement("GradationCurve", FormatToneCurve(analysis.Corrections.ToneCurve.LuminancePoints));
         AddElement("GradationCurveRed", FormatToneCurve(analysis.Corrections.ToneCurve.RedPoints));
         AddElement("GradationCurveGreen", FormatToneCurve(analysis.Corrections.ToneCurve.GreenPoints));
         AddElement("GradationCurveBlue", FormatToneCurve(analysis.Corrections.ToneCurve.BluePoints));
-        AddElement("GradationCurveY", FormatToneCurve(analysis.Corrections.ToneCurve.LuminancePoints));
 
         // --- Color Calibration (per-channel gains & shadow tint) ---
-        AddElement("ColorBalanceShadow", FormatColorBalance3(
-            analysis.Corrections.ColorCalibration.MidtoneRedGain,
-            analysis.Corrections.ColorCalibration.MidtoneGreenGain,
-            analysis.Corrections.ColorCalibration.MidtoneBlueGain));
-        AddElement("ShadowTint", FormatValue(analysis.Corrections.ColorCalibration.ShadowTint));
-        AddElement("RedHue", FormatValue(analysis.Corrections.ColorCalibration.RedHue));
-        AddElement("RedSaturation", FormatValue(analysis.Corrections.ColorCalibration.RedSaturation));
-        AddElement("GreenHue", FormatValue(analysis.Corrections.ColorCalibration.GreenHue));
-        AddElement("GreenSaturation", FormatValue(analysis.Corrections.ColorCalibration.GreenSaturation));
-        AddElement("BlueHue", FormatValue(analysis.Corrections.ColorCalibration.BlueHue));
-        AddElement("BlueSaturation", FormatValue(analysis.Corrections.ColorCalibration.BlueSaturation));
+        AddElement("ColorBalanceShadow", FormatColorBalance3(1.0, 1.0, 1.0));
 
         // --- Highlight / Shadow ---
         AddElement("Highlight", GenerateHighlightValues(analysis));
@@ -154,12 +142,22 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
         }
 
         var parts = new List<string>();
-        
-        // Always start at (0,0)
-        parts.Add("0,0");
 
-        // Convert 16-bit points (0-65535) to 0-1 range
-        for (int i = 0; i < points.Length; i += 2)
+        // Check if the first point is already (0,0) to avoid duplication
+        if (points.Length >= 2 && points[0] == 0 && points[1] == 0)
+        {
+            parts.Add("0,0");
+        }
+        else
+        {
+            // Always ensure start at (0,0)
+            parts.Add("0,0");
+        }
+
+        // Convert 16-bit points (0-65535) to 0-1 range, skip the first if already added
+        int startIndex = (points.Length >= 2 && points[0] == 0 && points[1] == 0) ? 2 : 0;
+
+        for (int i = startIndex; i < points.Length; i += 2)
         {
             if (i + 1 < points.Length)
             {
@@ -215,29 +213,25 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
         return $"0,0;{midtoneX.ToString("R", CultureInfo.InvariantCulture)},{adjustedY.ToString("R", CultureInfo.InvariantCulture)};1,1";
     }
 
-    /// <summary>
-    /// Generates Highlight values (R,G,B,Alpha) for the Highlight element.
-    /// Uses histogram data to find the true white point per channel.
-    /// </summary>
     private string GenerateHighlightValues(FilmAnalysisResult analysis)
     {
-        // Base highlight value (near white point)
-        // Channel gains are handled by GradationCurve, not here
-        double baseHighlight = 0.95;
+        double h = analysis.Corrections.Exposure.Highlight;
+        // Default to 0.95 if not set
+        if (h <= 0) h = 0.95;
         
-        return $"{baseHighlight.ToString("R", CultureInfo.InvariantCulture)};{baseHighlight.ToString("R", CultureInfo.InvariantCulture)};{baseHighlight.ToString("R", CultureInfo.InvariantCulture)};1.0";
+        return $"{h.ToString("R", CultureInfo.InvariantCulture)};{h.ToString("R", CultureInfo.InvariantCulture)};{h.ToString("R", CultureInfo.InvariantCulture)};1.0";
     }
 
     /// <summary>
     /// Generates Shadow values (R,G,B,Alpha) for the Shadow element.
-    /// Neutral black point — channel gains are applied via GradationCurve instead.
+    /// Uses ExposureAdjustment.Shadow when available.
     /// </summary>
     private string GenerateShadowValues(FilmAnalysisResult analysis)
     {
-        // Neutral shadow — do NOT multiply by channel gains.
-        // Gains belong in the tone curve, not in the shadow target point.
-        double baseShadow = 0.05;
+        double s = analysis.Corrections.Exposure.Shadow;
+        // Default to 0.05 if not set
+        if (s <= 0) s = 0.05;
         
-        return $"{baseShadow.ToString("R", CultureInfo.InvariantCulture)};{baseShadow.ToString("R", CultureInfo.InvariantCulture)};{baseShadow.ToString("R", CultureInfo.InvariantCulture)};0";
+        return $"{s.ToString("R", CultureInfo.InvariantCulture)};{s.ToString("R", CultureInfo.InvariantCulture)};{s.ToString("R", CultureInfo.InvariantCulture)};0";
     }
 }

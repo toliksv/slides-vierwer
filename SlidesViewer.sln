@@ -13,12 +13,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	
 		..\..\..\ИИ слайды\test_style.costyle = ..\..\..\ИИ слайды\test_style.costyle
 	
-		..\..\..\ИИ слайды\Scripts\ИИ слайды\Нальчик_google.costyle = ..\..\..\ИИ слайды\Scripts\ИИ слайды\Нальчик_google.costyle
 	
-		..\..\..\ИИ слайды\Scripts\ИИ слайды\Нальчик_п1_07.costyle = ..\..\..\ИИ слайды\Scripts\ИИ слайды\Нальчик_п1_07.costyle
 	
 		.gitignore = .gitignore
-	EndProjectSectionEndProjectSectionEndProjectSectionEndProjectSectionEndProjectSection
+			EndProjectSectionEndProjectSectionEndProjectSectionEndProjectSectionEndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.Host.Tests", "SlidesViewer.Host.Tests\SlidesViewer.Host.Tests.csproj", "{03098DC8-984A-4F15-A4F0-34B491577C5C}"
 EndProject

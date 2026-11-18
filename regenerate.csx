@@ -1,10 +1,16 @@
+#r "nuget: Microsoft.Extensions.DependencyInjection, 8.0.0"
+#r "nuget: OpenCvSharp4, 4.10.0.20240615"
+#r "nuget: OpenCvSharp4.Extensions, 4.10.0.20240615"
+#r "nuget: SixLabors.ImageSharp, 3.1.6"
+#r "SlidesViewer.FilmAnalyzer/bin/Debug/net8.0/SlidesViewer.FilmAnalyzer.dll"
 using Microsoft.Extensions.DependencyInjection;
 using SlidesViewer.FilmAnalyzer;
 using SlidesViewer.FilmAnalyzer.Analyzers;
 using SlidesViewer.FilmAnalyzer.Generators;
+using SlidesViewer.FilmAnalyzer.Optimization;
 using SlidesViewer.FilmAnalyzer.Services;
 
-var sourceFile = @"E:\ИИ слайды\Scripts\В гостях 83-85_\Нальчик_п2_18.tif";
+var sourceFile = @"E:\ИИ слайды\Нальчик_п2_18.tiff";
 var outputDir = @"E:\ИИ слайды\Scripts\ИИ слайды";
 
 if (!File.Exists(sourceFile))
@@ -18,6 +24,10 @@ services.AddSingleton<IColorDegradationAnalyzer, ColorDegradationAnalyzer>();
 services.AddSingleton<IPhysicalDefectAnalyzer, PhysicalDefectAnalyzer>();
 services.AddSingleton<IQualityAssessmentService, QualityAssessmentService>();
 services.AddSingleton<ICaptureOneStyleGenerator, CaptureOneStyleGenerator>();
+services.AddSingleton<ExposureOptimizationStep>();
+services.AddSingleton<WhiteBalanceOptimizationStep>();
+services.AddSingleton<ToneCurveOptimizationStep>();
+services.AddSingleton<IIterativeCorrectionOptimizer, IterativeCorrectionOptimizer>();
 services.AddSingleton<IFilmScannerAnalyzer, FilmScannerAnalyzer>();
 
 var sp = services.BuildServiceProvider();
@@ -27,33 +37,23 @@ var generator = sp.GetRequiredService<ICaptureOneStyleGenerator>();
 Console.WriteLine("Analyzing...");
 var result = analyzer.Analyze(sourceFile);
 
-Console.WriteLine($"R_Mean={result.Color.R_Mean:F0} G_Mean={result.Color.G_Mean:F0} B_Mean={result.Color.B_Mean:F0}");
-Console.WriteLine($"MidtoneRedGain={result.Corrections.ColorCalibration.MidtoneRedGain:F3}");
-Console.WriteLine($"MidtoneBlueGain={result.Corrections.ColorCalibration.MidtoneBlueGain:F3}");
-Console.WriteLine($"ShadowTint={result.Corrections.ColorCalibration.ShadowTint:F3}");
-Console.WriteLine($"BlackLevelRed={result.Corrections.Exposure.BlackLevelRed}");
+Console.WriteLine("\n--- Optimization Log ---");
+foreach (var line in result.OptimizationLog)
+    Console.WriteLine(line);
 
-// Check tone curve midpoints
-var lum = result.Corrections.ToneCurve.LuminancePoints;
-if (lum.Length >= 6)
-{
-    Console.WriteLine($"Lum mid Y={lum[5] / 65535.0:F3}");
-}
-var red = result.Corrections.ToneCurve.RedPoints;
-if (red.Length >= 6)
-{
-    Console.WriteLine($"Red mid Y={red[3] / 65535.0:F3}");
-}
-var green = result.Corrections.ToneCurve.GreenPoints;
-if (green.Length >= 6)
-{
-    Console.WriteLine($"Green mid Y={green[3] / 65535.0:F3}");
-}
-var blue = result.Corrections.ToneCurve.BluePoints;
-if (blue.Length >= 6)
-{
-    Console.WriteLine($"Blue mid Y={blue[3] / 65535.0:F3}");
-}
+Console.WriteLine("\n--- Final Adjustments ---");
+Console.WriteLine($"Exposure={result.Corrections.Exposure.Exposure:F2}");
+Console.WriteLine($"WhiteBalanceTemperature={result.Corrections.WhiteBalance.ColorTemperature:F0}");
+Console.WriteLine($"WhiteBalanceTint={result.Corrections.WhiteBalance.Tint:F2}");
+var redPts = result.Corrections.ToneCurve.RedPoints;
+var greenPts = result.Corrections.ToneCurve.GreenPoints;
+var bluePts = result.Corrections.ToneCurve.BluePoints;
+var redMid = redPts.Length >= 4 ? redPts[3] / 65535.0 : -1;
+var greenMid = greenPts.Length >= 4 ? greenPts[3] / 65535.0 : -1;
+var blueMid = bluePts.Length >= 4 ? bluePts[3] / 65535.0 : -1;
+Console.WriteLine($"RedMid={redMid:F3}");
+Console.WriteLine($"GreenMid={greenMid:F3}");
+Console.WriteLine($"BlueMid={blueMid:F3}");
 
 var style = generator.GenerateStyle(result);
 var outputPath = Path.Combine(outputDir, "Нальчик_п2_18.costyle");
