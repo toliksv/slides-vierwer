@@ -1,8 +1,6 @@
 using Microsoft.Extensions.Logging;
-using SlidesViewer.FilmAnalyzer.Analyzers;
-using SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 
-namespace SlidesViewer.FilmAnalyzer.Services;
+namespace SlidesViewer.FilmAnalyzer.Services.QualityAssessment;
 
 public class QualityAssessmentService : IQualityAssessmentService
 {
@@ -13,11 +11,13 @@ public class QualityAssessmentService : IQualityAssessmentService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public QualityAssessment Assess(ColorDegradationAnalysis color, PhysicalDefectAnalysis physical)
+    public Dtos.Analysis.QualityAssessment Assess(
+        Dtos.Analysis.ColorDegradationAnalysis color,
+        Dtos.Analysis.PhysicalDefectAnalysis physical)
     {
         _logger.LogDebug("Starting quality assessment for {SourceType}", color.MediumType);
 
-        var assessment = new QualityAssessment();
+        var assessment = new Dtos.Analysis.QualityAssessment();
 
         assessment.ColorScore = CalculateColorScore(color);
         assessment.SharpnessScore = CalculateSharpnessScore(physical);
@@ -44,7 +44,7 @@ public class QualityAssessmentService : IQualityAssessmentService
         return assessment;
     }
 
-    private double CalculateColorScore(ColorDegradationAnalysis color)
+    private double CalculateColorScore(Dtos.Analysis.ColorDegradationAnalysis color)
     {
         double score = 100.0;
 
@@ -66,14 +66,14 @@ public class QualityAssessmentService : IQualityAssessmentService
         return Math.Max(0, Math.Min(100, score));
     }
 
-    private double CalculateSharpnessScore(PhysicalDefectAnalysis physical)
+    private double CalculateSharpnessScore(Dtos.Analysis.PhysicalDefectAnalysis physical)
     {
         double score = physical.LocalContrast * 100.0;
         score -= physical.HazeLevel * 30.0;
         return Math.Max(0, Math.Min(100, score));
     }
 
-    private double CalculateDefectScore(PhysicalDefectAnalysis physical)
+    private double CalculateDefectScore(Dtos.Analysis.PhysicalDefectAnalysis physical)
     {
         double score = 100.0;
         score -= Math.Min(50, physical.ScratchCount * 3.0);
@@ -82,7 +82,7 @@ public class QualityAssessmentService : IQualityAssessmentService
         return Math.Max(0, Math.Min(100, score));
     }
 
-    private double CalculateDynamicRangeScore(ColorDegradationAnalysis color)
+    private double CalculateDynamicRangeScore(Dtos.Analysis.ColorDegradationAnalysis color)
     {
         double totalStdDev = color.R_StdDev + color.G_StdDev + color.B_StdDev;
         double avgStdDev = totalStdDev / 3.0;

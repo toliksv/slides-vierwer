@@ -1,7 +1,7 @@
 using OpenCvSharp;
 using SlidesViewer.FilmAnalyzer.Dtos.Adjustments;
 
-namespace SlidesViewer.FilmAnalyzer.Services;
+namespace SlidesViewer.FilmAnalyzer.Services.Simulation;
 
 /// <summary>
 /// Симуляция превью — применяет коррекции к изображению для виртуального отображения результата.

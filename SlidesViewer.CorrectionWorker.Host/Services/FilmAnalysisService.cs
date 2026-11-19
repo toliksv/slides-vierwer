@@ -35,12 +35,12 @@ public class FilmAnalysisService : IFilmAnalysisService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<string?> AnalyzeFileAsync(string filePath)
+    public Task<string?> AnalyzeFileAsync(string filePath)
     {
         if (!File.Exists(filePath))
         {
             Console.WriteLine($"[FilmAnalysisService] File not found: {filePath}");
-            return null;
+            return Task.FromResult<string?>(null);
         }
 
         try
@@ -59,13 +59,13 @@ public class FilmAnalysisService : IFilmAnalysisService
             // Save Capture One style with folder structure
             SaveCaptureOneStyle(filePath, analysisResult);
             Console.WriteLine($"[FilmAnalysisService] Analysis completed: {filePath}");
-            return jobId;
+            return Task.FromResult<string?>(jobId);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[FilmAnalysisService] Error analyzing {filePath}:");
             Console.WriteLine(ex.ToString());
-            return null;
+            return Task.FromResult<string?>(null);;
         }
     }
 

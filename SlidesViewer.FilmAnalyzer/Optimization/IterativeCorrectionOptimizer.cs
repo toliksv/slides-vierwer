@@ -1,10 +1,11 @@
 using OpenCvSharp;
 using SlidesViewer.FilmAnalyzer.Dtos.Adjustments;
-using SlidesViewer.FilmAnalyzer.Optimization;
 using SlidesViewer.FilmAnalyzer.Optimization.Chains;
+using SlidesViewer.FilmAnalyzer.Services.Metrics;
+using SlidesViewer.FilmAnalyzer.Services.Simulation;
 using SlidesViewer.FilmAnalyzer.Utilities;
 
-namespace SlidesViewer.FilmAnalyzer.Services;
+namespace SlidesViewer.FilmAnalyzer.Optimization;
 
 public class IterativeCorrectionOptimizer : IIterativeCorrectionOptimizer
 {

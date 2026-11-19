@@ -10,13 +10,13 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AAF3975C-36FC-818C-AEC2-1665EE290966}"
 	ProjectSection(SolutionItems) = preProject
 		.clinerules = .clinerules
-	
+		
 		..\..\..\ИИ слайды\test_style.costyle = ..\..\..\ИИ слайды\test_style.costyle
-	
-	
-	
+		
+		
+		
 		.gitignore = .gitignore
-			EndProjectSectionEndProjectSectionEndProjectSectionEndProjectSectionEndProjectSection
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.Host.Tests", "SlidesViewer.Host.Tests\SlidesViewer.Host.Tests.csproj", "{03098DC8-984A-4F15-A4F0-34B491577C5C}"
 EndProject
@@ -27,6 +27,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.CorrectionWorker.Host", "SlidesViewer.CorrectionWorker.Host\SlidesViewer.CorrectionWorker.Host.csproj", "{5FE023E7-1B81-4D50-A43F-CC28D648B5D4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.CorrectionWorker.Contracts", "SlidesViewer.CorrectionWorker.Contracts\SlidesViewer.CorrectionWorker.Contracts.csproj", "{7A3B9C2D-EF45-4A6B-8C9D-1E2F3A4B5C6D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidesViewer.FilmAnalyzer.Tests", "SlidesViewer.FilmAnalyzer.Tests\SlidesViewer.FilmAnalyzer.Tests.csproj", "{F9929950-8306-42F5-9AD4-537B1CD8A8E7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -65,5 +67,9 @@ Global
 		{7A3B9C2D-EF45-4A6B-8C9D-1E2F3A4B5C6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7A3B9C2D-EF45-4A6B-8C9D-1E2F3A4B5C6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7A3B9C2D-EF45-4A6B-8C9D-1E2F3A4B5C6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9929950-8306-42F5-9AD4-537B1CD8A8E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9929950-8306-42F5-9AD4-537B1CD8A8E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9929950-8306-42F5-9AD4-537B1CD8A8E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9929950-8306-42F5-9AD4-537B1CD8A8E7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

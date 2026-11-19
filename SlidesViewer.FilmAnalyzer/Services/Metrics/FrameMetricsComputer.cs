@@ -1,7 +1,7 @@
 using OpenCvSharp;
 using SlidesViewer.FilmAnalyzer.Dtos.Optimizations;
 
-namespace SlidesViewer.FilmAnalyzer.Services;
+namespace SlidesViewer.FilmAnalyzer.Services.Metrics;
 
 /// <summary>
 /// Вычисляет метрики кадра (клиппинг, перцентили по каналам) из изображения.

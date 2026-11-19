@@ -1,7 +1,7 @@
 using OpenCvSharp;
 using SlidesViewer.FilmAnalyzer.Dtos.Adjustments;
 
-namespace SlidesViewer.FilmAnalyzer.Services;
+namespace SlidesViewer.FilmAnalyzer.Optimization;
 
 /// <summary>
 /// Iterative correction optimizer that uses a closed-loop process:

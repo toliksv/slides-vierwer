@@ -9,7 +9,8 @@ using SlidesViewer.FilmAnalyzer.Analyzers;
 using SlidesViewer.FilmAnalyzer.Generators;
 using SlidesViewer.FilmAnalyzer.Optimization;
 using SlidesViewer.FilmAnalyzer.Optimization.Chains;
-using SlidesViewer.FilmAnalyzer.Services;
+using SlidesViewer.FilmAnalyzer.Services.Adjustments;
+using SlidesViewer.FilmAnalyzer.Services.QualityAssessment;
 
 var sourceFile = @"E:\ИИ слайды\Нальчик_п2_18.tiff";
 var outputDir = @"E:\ИИ слайды\Scripts\ИИ слайды";

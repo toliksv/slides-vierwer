@@ -7,8 +7,10 @@ using SlidesViewer.CorrectionWorker.Host.Services;
 using SlidesViewer.FilmAnalyzer;
 using SlidesViewer.FilmAnalyzer.Analyzers;
 using SlidesViewer.FilmAnalyzer.Generators;
+using SlidesViewer.FilmAnalyzer.Optimization;
 using SlidesViewer.FilmAnalyzer.Optimization.Chains;
-using SlidesViewer.FilmAnalyzer.Services;
+using SlidesViewer.FilmAnalyzer.Services.Adjustments;
+using SlidesViewer.FilmAnalyzer.Services.QualityAssessment;
 
 var logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -61,6 +63,8 @@ try
     builder.Services.AddSingleton<IPhysicalDefectAnalyzer, PhysicalDefectAnalyzer>();
     builder.Services.AddSingleton<IQualityAssessmentService, QualityAssessmentService>();
     builder.Services.AddSingleton<ICaptureOneStyleGenerator, CaptureOneStyleGenerator>();
+    builder.Services.AddSingleton<IDetailAdjustmentService, DetailAdjustmentService>();
+    builder.Services.AddSingleton<INoiseReductionAdjustmentService, NoiseReductionAdjustmentService>();
 
     // Optimization chain handlers (registered as IOptimizationHandler for collection injection)
     builder.Services.AddSingleton<IOptimizationHandler, SlidesViewer.FilmAnalyzer.Optimization.Chains.ChannelLevelsHandler>();

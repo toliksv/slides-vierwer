@@ -35,6 +35,9 @@ public class FilmAnalysisResult
     [JsonPropertyOrder(8)]
     public List<string> OptimizationLog { get; set; } = new();
 
+    [JsonPropertyOrder(9)]
+    public string? CaptureOneStyleXml { get; set; }
+
     public FilmAnalysisResult()
     {
     }
