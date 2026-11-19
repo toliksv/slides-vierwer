@@ -7,6 +7,7 @@ using SlidesViewer.CorrectionWorker.Host.Services;
 using SlidesViewer.FilmAnalyzer;
 using SlidesViewer.FilmAnalyzer.Analyzers;
 using SlidesViewer.FilmAnalyzer.Generators;
+using SlidesViewer.FilmAnalyzer.Optimization.Chains;
 using SlidesViewer.FilmAnalyzer.Services;
 
 var logger = new LoggerConfiguration()
@@ -60,6 +61,14 @@ try
     builder.Services.AddSingleton<IPhysicalDefectAnalyzer, PhysicalDefectAnalyzer>();
     builder.Services.AddSingleton<IQualityAssessmentService, QualityAssessmentService>();
     builder.Services.AddSingleton<ICaptureOneStyleGenerator, CaptureOneStyleGenerator>();
+
+    // Optimization chain handlers (registered as IOptimizationHandler for collection injection)
+    builder.Services.AddSingleton<IOptimizationHandler, SlidesViewer.FilmAnalyzer.Optimization.Chains.ChannelLevelsHandler>();
+    builder.Services.AddSingleton<IOptimizationHandler, SlidesViewer.FilmAnalyzer.Optimization.Chains.ExposureGuardHandler>();
+    builder.Services.AddSingleton<IOptimizationHandler, SlidesViewer.FilmAnalyzer.Optimization.Chains.WhiteBalanceHandler>();
+    builder.Services.AddSingleton<IOptimizationHandler, SlidesViewer.FilmAnalyzer.Optimization.Chains.ToneCurveHandler>();
+    builder.Services.AddSingleton<IOptimizationChainFactory, OptimizationChainFactory>();
+    builder.Services.AddSingleton<IIterativeCorrectionOptimizer, IterativeCorrectionOptimizer>();
     builder.Services.AddSingleton<IFilmScannerAnalyzer, FilmScannerAnalyzer>();
 
     // Correction Worker services

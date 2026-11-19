@@ -1,8 +1,7 @@
 using System.Text.Json.Serialization;
 using SlidesViewer.FilmAnalyzer.Dtos.Adjustments;
-using SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 
-namespace SlidesViewer.FilmAnalyzer.Dtos;
+namespace SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 
 /// <summary>
 /// Результат полного анализа слайда/плёнки, включающий анализ цвета, физические дефекты, оценку качества и рекомендуемые коррекции.

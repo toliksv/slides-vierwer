@@ -8,6 +8,7 @@ using SlidesViewer.FilmAnalyzer;
 using SlidesViewer.FilmAnalyzer.Analyzers;
 using SlidesViewer.FilmAnalyzer.Generators;
 using SlidesViewer.FilmAnalyzer.Optimization;
+using SlidesViewer.FilmAnalyzer.Optimization.Chains;
 using SlidesViewer.FilmAnalyzer.Services;
 
 var sourceFile = @"E:\ИИ слайды\Нальчик_п2_18.tiff";
@@ -24,6 +25,13 @@ services.AddSingleton<IColorDegradationAnalyzer, ColorDegradationAnalyzer>();
 services.AddSingleton<IPhysicalDefectAnalyzer, PhysicalDefectAnalyzer>();
 services.AddSingleton<IQualityAssessmentService, QualityAssessmentService>();
 services.AddSingleton<ICaptureOneStyleGenerator, CaptureOneStyleGenerator>();
+
+// Optimization chain handlers
+services.AddSingleton<IOptimizationHandler, ChannelLevelsHandler>();
+services.AddSingleton<IOptimizationHandler, ExposureGuardHandler>();
+services.AddSingleton<IOptimizationHandler, WhiteBalanceHandler>();
+services.AddSingleton<IOptimizationHandler, ToneCurveHandler>();
+services.AddSingleton<IOptimizationChainFactory, OptimizationChainFactory>();
 services.AddSingleton<ExposureOptimizationStep>();
 services.AddSingleton<WhiteBalanceOptimizationStep>();
 services.AddSingleton<ToneCurveOptimizationStep>();

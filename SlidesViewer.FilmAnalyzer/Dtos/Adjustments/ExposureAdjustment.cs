@@ -39,6 +39,16 @@ public class ExposureAdjustment
     [JsonPropertyOrder(9)]
     public double ShadowB { get; set; }
 
+    // Per-channel highlight targets
+    [JsonPropertyOrder(10)]
+    public double HighlightR { get; set; }
+
+    [JsonPropertyOrder(11)]
+    public double HighlightG { get; set; }
+
+    [JsonPropertyOrder(12)]
+    public double HighlightB { get; set; }
+
     public ExposureAdjustment()
     {
     }

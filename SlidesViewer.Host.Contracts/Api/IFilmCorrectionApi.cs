@@ -1,5 +1,6 @@
 using RestEase;
 using SlidesViewer.FilmAnalyzer.Dtos;
+using SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 
 namespace SlidesViewer.Host.Contracts.Api;
 

@@ -1,10 +1,5 @@
-using SlidesViewer.FilmAnalyzer.Dtos.Adjustments;
+namespace SlidesViewer.FilmAnalyzer.Dtos.Optimizations;
 
-namespace SlidesViewer.FilmAnalyzer.Optimization;
-
-/// <summary>
-/// Метрики текущего кадра, используемые шагами оптимизации.
-/// </summary>
 public class FrameMetrics
 {
     public double ClipHiR { get; set; }
@@ -36,12 +31,10 @@ public class FrameMetrics
     public double P98_B { get; set; }
 
     public bool IsNegative { get; set; }
-}
-
-/// <summary>
-/// Шаг пайплайна оптимизации коррекций.
-/// </summary>
-public interface IOptimizationStep
-{
-    bool ApplyStep(CaptureOneAdjustments adjustments, FrameMetrics metrics, out string logMessage);
+    public double P01_R { get; set; }
+    public double P01_G { get; set; }
+    public double P01_B { get; set; }
+    public double P99_R { get; set; }
+    public double P99_G { get; set; }
+    public double P99_B { get; set; }
 }

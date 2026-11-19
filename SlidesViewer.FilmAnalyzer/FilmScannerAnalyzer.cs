@@ -1,9 +1,10 @@
 using OpenCvSharp;
 using SlidesViewer.FilmAnalyzer.Analyzers;
-using SlidesViewer.FilmAnalyzer.Dtos;
+using SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 using SlidesViewer.FilmAnalyzer.Dtos.Adjustments;
 using SlidesViewer.FilmAnalyzer.Dtos.Common;
 using SlidesViewer.FilmAnalyzer.Generators;
+
 using SlidesViewer.FilmAnalyzer.Services;
 
 namespace SlidesViewer.FilmAnalyzer;
@@ -26,13 +27,13 @@ public class FilmScannerAnalyzer : IFilmScannerAnalyzer
         IPhysicalDefectAnalyzer physicalAnalyzer,
         IQualityAssessmentService qualityAssessment,
         ICaptureOneStyleGenerator styleGenerator,
-        IIterativeCorrectionOptimizer? optimizer = null)
+        IIterativeCorrectionOptimizer optimizer)
     {
         _colorAnalyzer = colorAnalyzer;
         _physicalAnalyzer = physicalAnalyzer;
         _qualityAssessment = qualityAssessment;
         _styleGenerator = styleGenerator;
-        _optimizer = optimizer ?? new IterativeCorrectionOptimizer();
+        _optimizer = optimizer;
     }
 
     public FilmAnalysisResult Analyze(string filePath)

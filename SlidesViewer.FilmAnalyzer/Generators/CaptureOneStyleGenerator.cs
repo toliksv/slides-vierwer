@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Xml;
-using SlidesViewer.FilmAnalyzer.Dtos;
+using SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 
 namespace SlidesViewer.FilmAnalyzer.Generators;
 
@@ -44,10 +44,7 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
         AddElement("CnrAmount", FormatValue(analysis.Corrections.NoiseReduction.Color));
         AddElement("ColorBalance", FormatColorBalance3(1.0, 1.0, 1.0));
         AddElement("ColorBalanceHighlight", FormatColorBalance3(1.0, 1.0, 1.0));
-        AddElement("ColorBalanceMidtone", FormatColorBalance3(
-            analysis.Corrections.ColorCalibration.MidtoneRedGain,
-            analysis.Corrections.ColorCalibration.MidtoneGreenGain,
-            analysis.Corrections.ColorCalibration.MidtoneBlueGain));
+        AddElement("ColorBalanceMidtone", FormatColorBalance3(1.0, 1.0, 1.0));
         AddElement("ColorBalanceShadow", FormatColorBalance3(1.0, 1.0, 1.0));
         AddElement("Contrast", FormatValue(analysis.Corrections.HdrToneMapping.Contrast));
         AddElement("DehazeAmount", FormatValue(0));
@@ -65,21 +62,16 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
         AddElement("GradationCurveGreen", FormatToneCurve(analysis.Corrections.ToneCurve.GreenPoints));
         AddElement("GradationCurveBlue", FormatToneCurve(analysis.Corrections.ToneCurve.BluePoints));
 
-        // --- Color Calibration (per-channel gains & shadow tint) ---
-        AddElement("ColorBalanceShadow", FormatColorBalance3(1.0, 1.0, 1.0));
-
         // --- Highlight / Shadow ---
         AddElement("Highlight", GenerateHighlightValues(analysis));
         AddElement("HighlightRecoveryEx", FormatValue(analysis.Corrections.HdrToneMapping.HighlightRecovery));
         AddElement("Midtone", "0;0;0;0");
         AddElement("Moire", "0;8");
-        AddElement("Name", fileName);
         AddElement("NoiseDetailsAmount", FormatValue(analysis.Corrections.NoiseReduction.LuminanceDetail));
         AddElement("NrAmount", FormatValue(analysis.Corrections.NoiseReduction.Luminance));
         AddElement("Saturation", FormatValue(analysis.Corrections.HdrToneMapping.Saturation));
         AddElement("Shadow", GenerateShadowValues(analysis));
         AddElement("ShadowRecovery", FormatValue(analysis.Corrections.HdrToneMapping.ShadowRecovery));
-        AddElement("StyleSource", "Styles");
         AddElement("SurfaceSmoothnessAmount", FormatValue(0));
         AddElement("TargetHighlight", "1;1;1;1");
         AddElement("TargetShadow", "0;0;0;0");
@@ -89,10 +81,6 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
         AddElement("UsmHaloControl", FormatValue(0.0));
         AddElement("UsmRadius", FormatValue(analysis.Corrections.Detail.EdgeEnhancement));
         AddElement("UsmThreshold", FormatValue(analysis.Corrections.Detail.MicroContrast));
-
-        // --- UUID ---
-        var uuidValue = $"{rawUuid[..8]}-{rawUuid[8..12]}-{rawUuid[12..16]}-{rawUuid[16..20]}-{rawUuid[20..]}";
-        AddElement("UUID", uuidValue);
 
         // --- White Balance ---
         AddElement("WhiteBalanceTemperature", FormatValue(analysis.Corrections.WhiteBalance.ColorTemperature));
@@ -166,7 +154,7 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
         }
 
         // Always end at (1,1) if not already present
-        if (parts.Count < 2 || !(parts[^1].StartsWith("1") || parts[^1].StartsWith("1.0")))
+        if (points.Length < 2 || !(points[^2] == 65535 && points[^1] == 65535))
         {
             parts.Add("1,1");
         }
@@ -174,51 +162,26 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
         return parts.Count > 0 ? string.Join(";", parts) : "0,0;1,1";
     }
 
-    /// <summary>
-    /// Generates per-channel RGB tone curves based on color analysis.
-    /// Creates a simple 3-point curve (black, midtone, white) for each channel.
-    /// The midtone Y value is adjusted based on channel gain to correct color cast.
-    /// </summary>
-    private string GenerateChannelCurve(double channelGain, int[] luminancePoints)
-    {
-        // Find the midtone X from the luminance curve
-        double midtoneX = 0.5;
-        double midtoneY = 0.5;
-        
-        if (luminancePoints != null && luminancePoints.Length >= 4)
-        {
-            // Find the point closest to 50% in the luminance curve
-            double targetX = 0.5;
-            for (int i = 2; i < luminancePoints.Length; i += 2)
-            {
-                double x = luminancePoints[i] / 65535.0;
-                if (Math.Abs(x - targetX) < 0.01)
-                {
-                    midtoneX = x;
-                    midtoneY = Math.Max(0, Math.Min(1, luminancePoints[i + 1] / 65535.0));
-                    break;
-                }
-            }
-        }
-
-        // Apply channel gain to the midtone Y
-        double adjustedY = midtoneY * channelGain;
-        adjustedY = Math.Max(0, Math.Min(1, adjustedY));
-
-        return $"0,0;{midtoneX.ToString("R", CultureInfo.InvariantCulture)},{adjustedY.ToString("R", CultureInfo.InvariantCulture)};1,1";
-    }
-
     private string GenerateHighlightValues(FilmAnalysisResult analysis)
     {
-        double h = analysis.Corrections.Exposure.Highlight;
-        // Default to 0.95 if not set
-        if (h <= 0) h = 0.95;
-        
-        return $"{h.ToString("R", CultureInfo.InvariantCulture)};{h.ToString("R", CultureInfo.InvariantCulture)};{h.ToString("R", CultureInfo.InvariantCulture)};1.0";
+        double hr = analysis.Corrections.Exposure.HighlightR;
+        double hg = analysis.Corrections.Exposure.HighlightG;
+        double hb = analysis.Corrections.Exposure.HighlightB;
+
+        // Fallback to uniform Highlight if per-channel values not set
+        if (hr <= 0 && hg <= 0 && hb <= 0)
+        {
+            double h = analysis.Corrections.Exposure.Highlight;
+            if (h <= 0) h = 0.95;
+            return $"1;{FormatValue(h)};{FormatValue(h)};{FormatValue(h)}";
+        }
+
+        // Per-channel highlight: RGB;R;G;B
+        return $"1;{FormatValue(hr)};{FormatValue(hg)};{FormatValue(hb)}";
     }
 
     /// <summary>
-    /// Generates Shadow values (R,G,B,Alpha) for the Shadow element.
+    /// Generates Shadow values (0;R;G;B) for the Shadow element.
     /// Uses per-channel ShadowR/ShadowG/ShadowB when available to remove color veil in shadows.
     /// </summary>
     private string GenerateShadowValues(FilmAnalysisResult analysis)
@@ -232,10 +195,10 @@ public class CaptureOneStyleGenerator : ICaptureOneStyleGenerator
         {
             double s = analysis.Corrections.Exposure.Shadow;
             if (s <= 0) s = 0.05;
-            return $"{s.ToString("R", CultureInfo.InvariantCulture)};{s.ToString("R", CultureInfo.InvariantCulture)};{s.ToString("R", CultureInfo.InvariantCulture)};0";
+            return $"0;{FormatValue(s)};{FormatValue(s)};{FormatValue(s)}";
         }
 
-        // Per-channel shadow: individual black point per R/G/B removes color veil
-        return $"{sr.ToString("R", CultureInfo.InvariantCulture)};{sg.ToString("R", CultureInfo.InvariantCulture)};{sb.ToString("R", CultureInfo.InvariantCulture)};0";
+        // Per-channel shadow: 0;R;G;B — individual black point per R/G/B removes color veil
+        return $"0;{FormatValue(sr)};{FormatValue(sg)};{FormatValue(sb)}";
     }
 }

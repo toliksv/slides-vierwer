@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using SlidesViewer.FilmAnalyzer;
 using SlidesViewer.FilmAnalyzer.Dtos;
+using SlidesViewer.FilmAnalyzer.Dtos.Analysis;
 using SlidesViewer.FilmAnalyzer.Generators;
 
 namespace SlidesViewer.CorrectionWorker.Host.Services;
